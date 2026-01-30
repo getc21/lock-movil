@@ -10,10 +10,11 @@ class ApiConfig {
   //static const String _port = '3000';
 
   static String get baseUrl {
-    // PRODUCCION - Usar URL remota
-    return _productionUrl;
+    // EN DESARROLLO: Usar IP local
+    return 'http://192.168.0.48:3000/api';
     
-    // EN DESARROLLO: Usar IP local (comentado)
+    // PRODUCCION - Usar URL remota (comentado)
+    // return _productionUrl;
     // if (_isEmulator()) {
     //   return 'http://$_emulatorIP:$_port/api';
     // } else {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -25,7 +26,10 @@ class DiscountProvider {
 
       final uri = Uri.parse('$baseUrl/discounts').replace(queryParameters: queryParams);
 
-      final response = await http.get(uri, headers: _headers);
+      final response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Timeout obteniendo descuentos'),
+      );
 
       final data = jsonDecode(response.body);
 
@@ -54,6 +58,9 @@ class DiscountProvider {
       final response = await http.get(
         Uri.parse('$baseUrl/discounts/$id'),
         headers: _headers,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Timeout obteniendo descuento'),
       );
       final data = jsonDecode(response.body);
 

@@ -6,6 +6,7 @@ import 'package:bellezapp/controllers/customer_controller.dart';
 import 'package:bellezapp/controllers/product_controller.dart';
 import 'package:bellezapp/controllers/order_controller.dart';
 import 'package:bellezapp/controllers/store_controller.dart';
+import 'package:bellezapp/controllers/quotation_controller.dart';
 import 'package:bellezapp/models/customer.dart';
 import 'package:bellezapp/utils/utils.dart';
 import 'package:bellezapp/widgets/payment_method_dialog.dart';
@@ -16,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:get/get.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:intl/intl.dart';
 
 class AddOrderPage extends StatefulWidget {
   const AddOrderPage({super.key});
@@ -97,6 +99,11 @@ class AddOrderPageState extends State<AddOrderPage> {
   void _clearScanCooldown() {
     _lastScannedCode = null;
     _lastScanTime = null;
+  }
+
+  String _formatCurrency(double amount) {
+    final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+    return formatter.format(amount);
   }
 
   void _handleBarcodeDetection(BarcodeCapture barcodeCapture) async {
@@ -1037,31 +1044,46 @@ class AddOrderPageState extends State<AddOrderPage> {
               horizontal: 16.0,
               vertical: 8.0,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _products.isEmpty
-                    ? null
-                    : () {
-                        _registerOrder();
-                      },
-                icon: Icon(Icons.check_circle, size: 24),
-                label: Text(
-                  'Procesar Venta',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Utils.colorBotones,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[300],
-                  disabledForegroundColor: Colors.grey[500],
-                  elevation: _products.isEmpty ? 0 : 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _products.isEmpty
+                          ? null
+                          : () {
+                              _registerOrder();
+                            },
+                      icon: Icon(Icons.check_circle, size: 24),
+                      label: Text('Procesar Orden'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Utils.colorBotones,
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _products.isEmpty
+                          ? null
+                          : () {
+                              _generateQuotation();
+                            },
+                      icon: Icon(Icons.description, size: 24),
+                      label: Text('Generar Cotización'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        disabledBackgroundColor: Colors.grey[300],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: 8),
@@ -1069,4 +1091,142 @@ class AddOrderPageState extends State<AddOrderPage> {
       ),
     );
   }
+
+  Future<void> _generateQuotation() async {
+    final quotationController = Get.isRegistered<QuotationController>()
+        ? Get.find<QuotationController>()
+        : Get.put(QuotationController());
+
+    try {
+      // Calcular subtotal
+      double subtotal = _products.fold(
+        0.0,
+        (sum, product) => sum + (product['quantity'] * product['price']),
+      );
+
+      // Mostrar diálogo de cliente (igual que al crear orden)
+      final showClientDialog = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Seleccionar Cliente'),
+            content: Text('¿Deseas seleccionar un cliente para esta cotización?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Continuar sin cliente'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Seleccionar cliente'),
+              ),
+            ],
+          );
+        },
+      );
+
+      // Si elige seleccionar cliente
+      if (showClientDialog == true) {
+        // Cargar clientes si no están cargados
+        if (customerController.customers.isEmpty) {
+          await customerController.loadCustomers();
+        }
+
+        if (!mounted) return;
+
+        // Mostrar diálogo de selección de cliente
+        final selectedCustomerId = await showDialog<String?>(
+          context: context,
+          builder: (BuildContext context) {
+            return CustomerSelectionDialog(suggestedCustomer: null);
+          },
+        );
+
+        if (selectedCustomerId != null) {
+          // Buscar el cliente seleccionado
+          final customer = customerController.customers.firstWhereOrNull(
+            (c) => (c['_id'] ?? c['id']) == selectedCustomerId,
+          );
+
+          if (customer != null) {
+            setState(() {
+              selectedCustomer = Customer.fromMap(customer);
+            });
+          }
+        }
+      }
+
+      // Mostrar diálogo de descuento
+      if (!mounted) return;
+
+      final selectedDiscount = await showDiscountSelectionDialog(
+        context: context,
+        totalAmount: subtotal,
+      );
+
+      // Calcular total final con descuento
+      final discountAmount = selectedDiscount != null
+          ? _calculateDiscountAmount(selectedDiscount, subtotal)
+          : 0.0;
+      final totalQuotation = subtotal - discountAmount;
+
+      // Preparar items para la cotización
+      final List<Map<String, dynamic>> quotationItems = _products.map((product) {
+        return {
+          'productId': product['id'],
+          'quantity': product['quantity'],
+          'price': product['price'],
+        };
+      }).toList();
+
+      Get.snackbar(
+        'Generando',
+        'Creando cotización...',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+
+      // Crear cotización SIN método de pago (se pedirá al convertir)
+      await quotationController.createQuotation(
+        items: quotationItems,
+        storeId: storeController.currentStore?['_id'] ?? '',
+        customerId: selectedCustomer?.id,
+        discountId: selectedDiscount?['_id'],
+        discountAmount: discountAmount,
+      );
+
+      Get.snackbar(
+        '✅ Cotización Generada',
+        'Subtotal: ${_formatCurrency(subtotal)}, Descuento: ${_formatCurrency(discountAmount)}, Total: ${_formatCurrency(totalQuotation)}',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+
+      // Limpiar formulario
+      setState(() {
+        _products.clear();
+        selectedCustomer = null;
+        _clearScanCooldown();
+      });
+
+      // Recargar productos
+      await productController.loadProductsForCurrentStore();
+
+      // Navegar de regreso
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Error al generar cotización: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
 }
+

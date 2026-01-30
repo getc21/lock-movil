@@ -1,5 +1,9 @@
 import 'package:bellezapp/controllers/order_controller.dart';
+import 'package:bellezapp/controllers/product_controller.dart';
+import 'package:bellezapp/controllers/returns/returns_controller.dart';
+import 'package:bellezapp/models/returns/return_models.dart';
 import 'package:bellezapp/pages/add_order_page.dart';
+import 'package:bellezapp/pages/add_order_by_search_page.dart';
 import 'package:bellezapp/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,6 +18,8 @@ class OrderListPage extends StatefulWidget {
 
 class OrderListPageState extends State<OrderListPage> {
   late final OrderController orderController;
+  late final ReturnsController returnsController;
+  late final ProductController productController;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -24,6 +30,16 @@ class OrderListPageState extends State<OrderListPage> {
       orderController = Get.find<OrderController>();
     } catch (e) {
       orderController = Get.put(OrderController());
+    }
+    try {
+      returnsController = Get.find<ReturnsController>();
+    } catch (e) {
+      returnsController = Get.put(ReturnsController());
+    }
+    try {
+      productController = Get.find<ProductController>();
+    } catch (e) {
+      productController = Get.put(ProductController());
     }
     _loadOrders();
   }
@@ -269,12 +285,7 @@ class OrderListPageState extends State<OrderListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Utils.colorBotones,
-        onPressed: () async {
-          final result = await Get.to(() => const AddOrderPage());
-          if (result == true || result == null) {
-            orderController.loadOrders();
-          }
-        },
+        onPressed: () => _showCreateOrderOptions(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -357,6 +368,35 @@ class OrderListPageState extends State<OrderListPage> {
         child: ExpansionTile(
           tilePadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           childrenPadding: EdgeInsets.zero,
+          trailing: PopupMenuButton(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem(
+                child: Row(
+                  children: [
+                    Icon(Icons.print_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Imprimir PDF'),
+                  ],
+                ),
+                onTap: () {
+                  Get.snackbar('PDF', 'Generando PDF de la orden...');
+                },
+              ),
+              PopupMenuItem(
+                child: Row(
+                  children: [
+                    Icon(Icons.assignment_return, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Crear devolución'),
+                  ],
+                ),
+                onTap: () {
+                  _showCreateReturnDialog(context, order);
+                },
+              ),
+            ],
+          ),
           leading: Container(
             width: 45,
             height: 45,
@@ -602,5 +642,437 @@ class OrderListPageState extends State<OrderListPage> {
       default:
         return 'Efectivo';
     }
+  }
+
+  void _showCreateOrderOptions() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Crear Orden'),
+          content: const Text('¿Cómo deseas crear la orden?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final result = await Get.to(() => const AddOrderPage());
+                if (result == true || result == null) {
+                  orderController.loadOrders();
+                }
+              },
+              icon: const Icon(Icons.qr_code),
+              label: const Text('Por QR'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Utils.colorBotones,
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final result = await Get.to(() => const AddOrderBySearchPage());
+                if (result == true || result == null) {
+                  orderController.loadOrders();
+                  // ⭐ También recargar productos para actualizar stock
+                  productController.loadProductsForCurrentStore();
+                }
+              },
+              icon: const Icon(Icons.search),
+              label: const Text('Por Búsqueda'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[600],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCreateReturnDialog(BuildContext context, Map<String, dynamic> order) {
+    final items = order['items'] as List<dynamic>? ?? [];
+    final Map<int, int> selectedQuantities = {};
+    
+    // Inicializar cantidades en 0
+    for (int i = 0; i < items.length; i++) {
+      selectedQuantities[i] = 0;
+    }
+
+    String selectedType = 'return_';
+    String selectedReason = 'other';
+    String selectedRefundMethod = 'efectivo';
+    final TextEditingController notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Crear Devolución'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Información de la orden
+                    Card(
+                      color: Colors.grey[100],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Orden: #${(order["_id"] as String?)?.substring(((order["_id"] as String?)?.length ?? 0) - 6) ?? "N/A"}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Cliente: ${order["customerId"] is Map ? (order["customerId"] as Map)["name"] ?? "General" : "General"}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Tipo de devolución
+                    const Text('Tipo de Devolución', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: selectedType,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'return_', child: Text('Devolución')),
+                        DropdownMenuItem(value: 'exchange', child: Text('Cambio')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => selectedType = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Razón de devolución
+                    const Text('Razón de Devolución', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: selectedReason,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'defective', child: Text('Defectuoso')),
+                        DropdownMenuItem(value: 'not_as_described', child: Text('No Como se Describe')),
+                        DropdownMenuItem(value: 'customer_change_mind', child: Text('Cambió de Opinión')),
+                        DropdownMenuItem(value: 'wrong_item', child: Text('Producto Incorrecto')),
+                        DropdownMenuItem(value: 'damaged', child: Text('Dañado')),
+                        DropdownMenuItem(value: 'other', child: Text('Otro')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => selectedReason = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Método de reembolso
+                    const Text('Método de Reembolso', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: selectedRefundMethod,
+                      isExpanded: true,
+                      items: const [
+                        DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
+                        DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
+                        DropdownMenuItem(value: 'transferencia', child: Text('Transferencia')),
+                        DropdownMenuItem(value: 'cuenta', child: Text('Cuenta')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => selectedRefundMethod = value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Productos
+                    const Text('Productos a Devolver', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    if (items.isEmpty)
+                      const Text('No hay productos en esta orden', style: TextStyle(fontSize: 11, color: Colors.grey))
+                    else
+                      ...[
+                        ...items.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        var item = entry.value;
+                        int availableQty = item['quantity'] ?? 0;
+                        String productName = item['productId'] is Map
+                            ? (item['productId'] as Map)['name'] ?? 'Producto'
+                            : 'Producto #${item['productId']}';
+                        String productId = item['productId'] is Map
+                            ? ((item['productId'] as Map)['_id'] ?? '').toString()
+                            : (item['productId'] ?? '').toString();
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    productName,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Disponible: $availableQty x ${_formatCurrency(double.tryParse(item['price'].toString()) ?? 0.0)}',
+                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Text('Cantidad:', style: TextStyle(fontSize: 11)),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey[300]!),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 32,
+                                              height: 32,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                icon: const Icon(Icons.remove),
+                                                iconSize: 16,
+                                                onPressed: () {
+                                                  if ((selectedQuantities[index] ?? 0) > 0) {
+                                                    setState(() => selectedQuantities[index] = (selectedQuantities[index] ?? 0) - 1);
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 40,
+                                              child: Center(
+                                                child: Text(
+                                                  '${selectedQuantities[index] ?? 0}',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 32,
+                                              height: 32,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                icon: const Icon(Icons.add),
+                                                iconSize: 16,
+                                                onPressed: () {
+                                                  if ((selectedQuantities[index] ?? 0) < availableQty) {
+                                                    setState(() => selectedQuantities[index] = (selectedQuantities[index] ?? 0) + 1);
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                        // Total a devolver
+                        Container(
+                          margin: const EdgeInsets.only(top: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Utils.colorBotones.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Utils.colorBotones.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total a devolver:',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              Text(
+                                _formatCurrency(
+                                  selectedQuantities.entries.fold(0.0, (sum, entry) {
+                                    int index = entry.key;
+                                    int qty = entry.value;
+                                    if (qty > 0 && index < items.length) {
+                                      final price = double.tryParse(items[index]['price'].toString()) ?? 0.0;
+                                      return sum + (price * qty);
+                                    }
+                                    return sum;
+                                  }),
+                                ),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Utils.colorBotones,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                    const SizedBox(height: 12),
+
+                    // Notas
+                    const Text('Notas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Agregar notas (opcional)',
+                        hintStyle: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    print('=== DEBUG: Botón Crear Devolución presionado ===');
+                    final hasItems = selectedQuantities.values.any((qty) => qty > 0);
+                    print('Has items: $hasItems');
+                    if (!hasItems) {
+                      Get.snackbar('Error', 'Debes seleccionar al menos un producto');
+                      return;
+                    }
+
+                    try {
+                      // Agregar items seleccionados al controller
+                      print('DEBUG: Limpiando selectedItems');
+                      returnsController.selectedItems.clear();
+                      
+                      print('DEBUG: Configurando selectedType');
+                      returnsController.selectedType.value = selectedType == 'return_' 
+                          ? ReturnType.return_ 
+                          : ReturnType.exchange;
+                      
+                      print('DEBUG: Configurando selectedReason');
+                      returnsController.selectedReason.value = 
+                          selectedReason == 'defective' ? ReturnReasonCategory.defective :
+                          selectedReason == 'not_as_described' ? ReturnReasonCategory.notAsDescribed :
+                          selectedReason == 'customer_change_mind' ? ReturnReasonCategory.customerChangeMind :
+                          selectedReason == 'wrong_item' ? ReturnReasonCategory.wrongItem :
+                          selectedReason == 'damaged' ? ReturnReasonCategory.damaged :
+                          ReturnReasonCategory.other;
+                      
+                      print('DEBUG: Configurando selectedRefundMethod');
+                      returnsController.selectedRefundMethod.value =
+                          selectedRefundMethod == 'efectivo' ? RefundMethod.cash :
+                          selectedRefundMethod == 'tarjeta' ? RefundMethod.card :
+                          selectedRefundMethod == 'transferencia' ? RefundMethod.transfer :
+                          RefundMethod.account;
+                      
+                      print('DEBUG: Configurando notes');
+                      returnsController.notes.value = notesController.text;
+
+                      // Agregar items con las cantidades seleccionadas
+                      print('DEBUG: Agregando items');
+                      selectedQuantities.forEach((index, quantity) {
+                        if (quantity > 0) {
+                          final item = items[index];
+                          String productName = item['productId'] is Map
+                              ? (item['productId'] as Map)['name'] ?? 'Producto'
+                              : 'Producto #${item['productId']}';
+                          String productId = item['productId'] is Map
+                              ? ((item['productId'] as Map)['_id'] ?? '').toString()
+                              : (item['productId'] ?? '').toString();
+                          int originalQty = item['quantity'] ?? 0;
+                          
+                          print('DEBUG: Agregando producto - ID: $productId, Name: $productName, Qty: $quantity');
+                          returnsController.addItem(
+                            productId: productId,
+                            productName: productName,
+                            originalQuantity: originalQty,
+                            quantity: quantity,
+                            unitPrice: double.tryParse(item['price'].toString()) ?? 0.0,
+                            returnReason: notesController.text.isNotEmpty 
+                                ? notesController.text 
+                                : 'Producto a devolver',
+                          );
+                        }
+                      });
+
+                      // Crear la devolución
+                      final orderId = (order['_id'] ?? '').toString();
+                      final storeData = order['storeId'];
+                      final storeId = storeData is Map 
+                          ? (storeData['_id'] ?? '').toString()
+                          : (storeData ?? '').toString();
+                      
+                      print('DEBUG: Creando solicitud - OrderID: $orderId, StoreID: $storeId');
+                      print('DEBUG: Items count: ${returnsController.selectedItems.length}');
+                      
+                      final success = await returnsController.createReturnRequest(
+                        orderId: orderId,
+                        storeId: storeId,
+                      );
+
+                      print('DEBUG: Success: $success');
+                      
+                      if (success) {
+                        Navigator.of(context).pop();
+                        // Mostrar mensaje de éxito
+                        Get.snackbar(
+                          'Éxito',
+                          'Devolución creada correctamente',
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: Colors.green,
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 2),
+                        );
+                        // Refrescar lista de órdenes y productos
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          orderController.loadOrders();
+                          productController.loadProducts();
+                        });
+                      } else {
+                        // Si falla, mostrar error pero no descartar el diálogo
+                        Get.snackbar('Error', 'Error al crear la devolución');
+                      }
+                    } catch (e) {
+                      print('DEBUG ERROR: $e');
+                      print('Stack trace: ${StackTrace.current}');
+                      Get.snackbar('Error', 'Error al crear devolución: $e');
+                    }
+                  },
+                  child: const Text('Crear Devolución'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 }

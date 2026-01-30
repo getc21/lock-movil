@@ -13,6 +13,177 @@ class PdfService {
 
   // REPORT GENERATION METHODS
   
+  static Future<String> generateQuotationPdf({
+    required Map<String, dynamic> quotation,
+  }) async {
+    final pdf = pw.Document();
+
+    final formatter = DateFormat('dd/MM/yyyy HH:mm');
+    final currencyFormatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(30),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            // Header
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'COTIZACIÓN',
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 8),
+                    pw.Text(
+                      'Tienda: ${quotation['storeId'] is Map ? quotation['storeId']['name'] ?? 'N/A' : 'N/A'}',
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'Fecha: ${formatter.format(DateTime.parse(quotation['quotationDate'] ?? DateTime.now().toIso8601String()))}',
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Estado: ${_getStatusLabel(quotation['status'] ?? 'pending')}',
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            pw.Divider(),
+            pw.SizedBox(height: 10),
+
+            // Cliente
+            pw.Text(
+              'Cliente: ${quotation['customerName'] ?? 'Cliente General'}',
+              style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 15),
+
+            // Tabla de items
+            pw.TableHelper.fromTextArray(
+              headers: ['Producto', 'Cantidad', 'Precio Unitario', 'Subtotal'],
+              data: (quotation['items'] as List? ?? []).map((item) {
+                final qty = item['quantity'] ?? 0;
+                final price = (item['price'] as num?)?.toDouble() ?? 0.0;
+                final subtotal = qty * price;
+                return [
+                  item['productName'] ?? item['productId'] ?? 'Producto',
+                  qty.toString(),
+                  currencyFormatter.format(price),
+                  currencyFormatter.format(subtotal),
+                ];
+              }).toList(),
+              border: pw.TableBorder.all(width: 0.5),
+              headerStyle: pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.grey700,
+              ),
+              cellAlignment: pw.Alignment.centerRight,
+              cellPadding: const pw.EdgeInsets.all(8),
+            ),
+            pw.SizedBox(height: 20),
+
+            // Totales
+            pw.Container(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.end,
+                    children: [
+                      pw.SizedBox(width: 100, child: pw.Text('Subtotal:')),
+                      pw.SizedBox(
+                        width: 100,
+                        child: pw.Text(
+                          currencyFormatter.format(
+                            (quotation['items'] as List? ?? [])
+                                .fold<double>(
+                                  0.0,
+                                  (sum, item) =>
+                                      sum +
+                                      ((item['quantity'] ?? 0) * ((item['price'] as num?)?.toDouble() ?? 0.0)),
+                                ),
+                          ),
+                          textAlign: pw.TextAlign.right,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (((quotation['discountAmount'] as num?)?.toDouble() ?? 0) > 0)
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.end,
+                      children: [
+                        pw.SizedBox(width: 100, child: pw.Text('Descuento:')),
+                        pw.SizedBox(
+                          width: 100,
+                          child: pw.Text(
+                            '-${currencyFormatter.format((quotation['discountAmount'] as num?)?.toDouble() ?? 0.0)}',
+                            textAlign: pw.TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  pw.SizedBox(height: 8),
+                  pw.Container(
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border(
+                        top: const pw.BorderSide(width: 2),
+                      ),
+                    ),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.end,
+                      children: [
+                        pw.SizedBox(
+                          width: 100,
+                          child: pw.Text(
+                            'TOTAL:',
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                          ),
+                        ),
+                        pw.SizedBox(
+                          width: 100,
+                          child: pw.Text(
+                            currencyFormatter.format((quotation['totalQuotation'] as num?)?.toDouble() ?? 0.0),
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return await _savePdf(pdf, 'Cotizacion_${DateTime.now().millisecondsSinceEpoch}');
+  }
+
   static Future<String> generateInventoryRotationPdf({
     required Map<String, dynamic> data,
     required DateTime startDate,
@@ -195,6 +366,62 @@ class PdfService {
 
     return await _savePdf(pdf,
         'Comparativo_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+  }
+
+  // Generate PDF for returns/devoluciones list
+  static Future<String> generateReturnsPdf({
+    required List<dynamic> returns,
+    required String storeName,
+  }) async {
+    final pdf = pw.Document();
+
+    final totalReturns = returns.length;
+    final totalRefunded = returns.fold<double>(
+      0.0,
+      (sum, item) => sum + (item.totalRefundAmount as num? ?? 0).toDouble(),
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(30),
+        build: (context) => [
+          _buildHeader('Reporte de Devoluciones', DateTime.now(), DateTime.now()),
+          pw.SizedBox(height: 10),
+          pw.Text(
+            'Tienda: $storeName',
+            style: pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+          ),
+          pw.SizedBox(height: 20),
+          
+          // Summary section
+          _buildSummarySection(
+            'Resumen de Devoluciones',
+            [
+              ('Total de Devoluciones', totalReturns.toString()),
+              ('Total Dinero Devuelto', '\$${totalRefunded.toStringAsFixed(2)}'),
+              ('Fecha', DateFormat('dd/MM/yyyy').format(DateTime.now())),
+            ],
+          ),
+          pw.SizedBox(height: 20),
+
+          // Returns table
+          pw.Text(
+            'Detalle de Devoluciones',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          
+          if (returns.isEmpty)
+            pw.Text('No hay devoluciones registradas')
+          else
+            _buildReturnsTable(returns),
+        ],
+      ),
+    );
+
+    return await _savePdf(pdf,
+        'Devoluciones_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
   }
 
   // Helper methods for PDF building
@@ -425,6 +652,76 @@ class PdfService {
     );
   }
 
+  static pw.Widget _buildReturnsTable(List returns) {
+    if (returns.isEmpty) {
+      return pw.Text('No hay devoluciones registradas');
+    }
+
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(1.5),
+        1: const pw.FlexColumnWidth(1),
+        2: const pw.FlexColumnWidth(1),
+        3: const pw.FlexColumnWidth(1.5),
+      },
+      children: [
+        pw.TableRow(
+          decoration: pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Orden',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Cliente',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Monto',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Tipo',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+          ],
+        ),
+        ...returns.map((returnItem) {
+          return pw.TableRow(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(returnItem.orderNumber?.toString() ?? 'N/A',
+                    style: const pw.TextStyle(fontSize: 10)),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(returnItem.customerName ?? 'Sin nombre',
+                    style: const pw.TextStyle(fontSize: 10)),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(
+                    '\$${(returnItem.totalRefundAmount as num? ?? 0).toStringAsFixed(2)}',
+                    style: const pw.TextStyle(fontSize: 10)),
+              ),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Text(returnItem.type?.label ?? 'N/A',
+                    style: const pw.TextStyle(fontSize: 10)),
+              ),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+
   static String _getPeriodLabel(String period) {
     switch (period) {
       case 'day':
@@ -435,6 +732,23 @@ class PdfService {
         return 'Mensual';
       default:
         return period;
+    }
+  }
+
+  static String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pendiente';
+      case 'approved':
+        return 'Aprobada';
+      case 'rejected':
+        return 'Rechazada';
+      case 'converted':
+        return 'Convertida';
+      case 'expired':
+        return 'Expirada';
+      default:
+        return status;
     }
   }
 

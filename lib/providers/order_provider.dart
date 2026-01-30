@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -67,7 +68,10 @@ class OrderProvider {
       if (endDate != null) queryParams['endDate'] = endDate;
 
       final Uri uri = Uri.parse('$baseUrl/orders').replace(queryParameters: queryParams);
-      final http.Response response = await http.get(uri, headers: _headers);
+      final http.Response response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Timeout obteniendo órdenes'),
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {

@@ -15,6 +15,8 @@ import 'package:bellezapp/pages/theme_settings_page.dart';
 import 'package:bellezapp/pages/user_management_page.dart';
 import 'package:bellezapp/pages/advanced_reports_page.dart';
 import 'package:bellezapp/pages/expense_report_page.dart';
+import 'package:bellezapp/pages/returns_list_page.dart';
+import 'package:bellezapp/pages/quotations_list_page.dart';
 import 'package:bellezapp/utils/utils.dart';
 import 'package:bellezapp/widgets/store_selector.dart';
 import 'package:flutter/material.dart';
@@ -361,6 +363,26 @@ class HomePageState extends State<HomePage> {
                           () {
                             Navigator.pop(context);
                             Get.to(() => DiscountListPage());
+                          },
+                        ),
+                        _buildModernDrawerTile(
+                          'Devoluciones',
+                          'Gestionar devoluciones de productos',
+                          Icons.assignment_return_outlined,
+                          Colors.red,
+                          () {
+                            Navigator.pop(context);
+                            Get.to(() => ReturnsListPage());
+                          },
+                        ),
+                        _buildModernDrawerTile(
+                          'Cotizaciones',
+                          'Gestionar cotizaciones de ventas',
+                          Icons.description_outlined,
+                          Colors.teal,
+                          () {
+                            Navigator.pop(context);
+                            Get.to(() => QuotationsListPage());
                           },
                         ),
                         
