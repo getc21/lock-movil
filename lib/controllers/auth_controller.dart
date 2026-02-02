@@ -8,6 +8,7 @@ import '../pages/store_management_page.dart';
 import '../pages/login_page.dart';
 import '../utils/utils.dart';
 import 'store_controller.dart';
+import 'cash_controller.dart';
 
 class AuthController extends GetxController {
   final AuthProvider _authProvider = AuthProvider();
@@ -265,6 +266,24 @@ class AuthController extends GetxController {
 
   // Logout
   Future<void> logout() async {
+    // Verificar si hay caja abierta
+    try {
+      final cashController = Get.find<CashController>();
+      if (cashController.isCashRegisterOpen) {
+        Get.snackbar(
+          'No se puede cerrar sesión',
+          'Debe cerrar la caja antes de cerrar sesión',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        return;
+      }
+    } catch (e) {
+      // CashController no existe, continuar con logout
+    }
+
     _isLoading.value = true;
 
     try {

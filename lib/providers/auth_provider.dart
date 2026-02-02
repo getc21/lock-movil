@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -56,6 +57,9 @@ class AuthProvider {
           'username': username,
           'password': password,
         }),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Conexión agotada. Intente nuevamente'),
       );
 
       final data = jsonDecode(response.body);
@@ -74,6 +78,11 @@ class AuthProvider {
           'message': data['message'] ?? 'Error en el login'
         };
       }
+    } on TimeoutException {
+      return {
+        'success': false,
+        'message': 'Conexión agotada. Verifique que el servidor esté disponible en $baseUrl'
+      };
     } catch (e) {
       return {'success': false, 'message': 'Error de conexión: $e'};
     }

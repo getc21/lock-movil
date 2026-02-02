@@ -1,7 +1,10 @@
 import 'package:bellezapp/controllers/cash_controller.dart';
+import 'package:bellezapp/controllers/order_controller.dart';
+import 'package:bellezapp/controllers/store_controller.dart';
 import 'package:bellezapp/models/cash_movement.dart';
 import 'package:bellezapp/pages/daily_cash_report_page.dart';
 import 'package:bellezapp/pages/cash_movements_page.dart';
+import 'package:bellezapp/services/pdf_service.dart';
 import 'package:bellezapp/utils/utils.dart';
 import 'package:bellezapp/utils/time_utils.dart';
 import 'package:bellezapp/widgets/store_aware_app_bar.dart';
@@ -9,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class CashRegisterPage extends StatefulWidget {
   const CashRegisterPage({super.key});
@@ -22,6 +26,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
   final TextEditingController _openAmountController = TextEditingController();
   final TextEditingController _closeAmountController = TextEditingController();
   final TextEditingController _incomeAmountController = TextEditingController();
+  final TextEditingController _incomeDescriptionController = TextEditingController();
   final TextEditingController _outcomeAmountController = TextEditingController();
   
   // Variable para controlar di�logos abiertos
@@ -50,6 +55,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     _openAmountController.dispose();
     _closeAmountController.dispose();
     _incomeAmountController.dispose();
+    _incomeDescriptionController.dispose();
     _outcomeAmountController.dispose();
     super.dispose();
   }
@@ -85,20 +91,70 @@ class CashRegisterPageState extends State<CashRegisterPage> {
   // M�todo helper para formatear moneda de forma segura
   String _safeFormatCurrency(double amount) {
     try {
-      if (!mounted) return '\$${amount.toStringAsFixed(2)}';
-      return cashController.formatCurrency(amount);
+      final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+      return formatter.format(amount);
     } catch (e) {
-      return '\$${amount.toStringAsFixed(2)}';
+      return 'Bs.${amount.toStringAsFixed(2)}';
     }
   }
 
-  // M�todo helper para obtener monto esperado de forma segura
+  // Método helper para obtener monto esperado de forma segura
   double _getSafeExpectedAmount() {
     try {
       if (!mounted || !cashController.isCashRegisterOpen) return 0.0;
-      return cashController.expectedAmount;
+      return _calculateExpectedAmount();
     } catch (e) {
       return 0.0;
+    }
+  }
+
+  // Calcula el monto esperado desde apertura de caja
+  double _calculateExpectedAmount() {
+    if (!cashController.isCashRegisterOpen || cashController.currentCashRegister == null) {
+      return 0.0;
+    }
+
+    final openingAmount = (cashController.currentCashRegister!['openingAmount'] ?? 0.0).toDouble();
+    final openingTime = cashController.currentCashRegister!['openingTime'] ?? 
+                       cashController.currentCashRegister!['createdAt'];
+
+    if (openingTime == null) return openingAmount;
+
+    try {
+      final openingDateTime = DateTime.parse(openingTime.toString());
+      double totalIncome = 0.0;
+      double totalExpenses = 0.0;
+      double totalSales = 0.0;
+
+      // Filtrar movimientos posteriores a apertura
+      for (var movement in cashController.todayMovements) {
+        try {
+          final movementDate = DateTime.parse(
+            movement['createdAt']?.toString() ?? 
+            movement['date']?.toString() ?? 
+            DateTime.now().toIso8601String()
+          );
+
+          if (movementDate.isAfter(openingDateTime)) {
+            final amount = (movement['amount'] ?? 0.0).toDouble();
+            final type = movement['type'] ?? '';
+
+            if (type == 'sale') {
+              totalSales += amount;
+            } else if (type == 'income') {
+              totalIncome += amount;
+            } else if (type == 'expense') {
+              totalExpenses += amount;
+            }
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      return openingAmount + totalSales + totalIncome - totalExpenses;
+    } catch (e) {
+      return openingAmount;
     }
   }
 
@@ -264,7 +320,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                         ),
                       ),
                       Text(
-                        _formatOpeningAmount(cashController.currentCashRegister) ?? '\$0.00',
+                        _formatOpeningAmount(cashController.currentCashRegister) ?? 'Bs.0.00',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -282,7 +338,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     );
   }
 
-  // Card del resumen del d�a
+  // Card del resumen del día
   Widget _buildDailySummaryCard() {
     // Calcular totales desde apertura de caja
     double totalSalesFromOpening = 0;
@@ -290,17 +346,21 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     double totalOutcomeFromOpening = 0;
     double totalCashFromOpening = 0;
     double expectedAmountFromOpening = 0;
+    double totalQRSalesFromOpening = 0;
+    
+    final openingAmount = cashController.isCashRegisterOpen && cashController.currentCashRegister != null
+        ? (cashController.currentCashRegister!['openingAmount'] as num?)?.toDouble() ?? 0.0
+        : 0.0;
     
     if (cashController.isCashRegisterOpen && cashController.currentCashRegister != null) {
       final openingTime = cashController.currentCashRegister!['openingTime'] ?? 
                          cashController.currentCashRegister!['createdAt'];
-      final openingAmount = (cashController.currentCashRegister!['openingAmount'] ?? 0.0).toDouble();
       
       if (openingTime != null) {
         try {
           final openingDateTime = DateTime.parse(openingTime.toString());
           
-          // Filtrar movimientos posteriores a apertura
+          // Filtrar movimientos POSTERIORES a apertura (excluyendo el movimiento de apertura)
           for (var movement in cashController.todayMovements) {
             try {
               final movementDate = DateTime.parse(
@@ -309,16 +369,20 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                 DateTime.now().toIso8601String()
               );
               
+              // Solo incluir movimientos DESPUÉS de la apertura
               if (movementDate.isAfter(openingDateTime)) {
                 final amount = (movement['amount'] ?? 0.0).toDouble();
                 final type = movement['type'] ?? '';
                 
-                if (type == 'sale') {
-                  totalSalesFromOpening += amount;
-                } else if (type == 'income') {
-                  totalIncomeFromOpening += amount;
-                } else if (type == 'expense') {
-                  totalOutcomeFromOpening += amount;
+                // No contar el movimiento de apertura ni cierre
+                if (type != 'opening' && type != 'closing') {
+                  if (type == 'sale') {
+                    totalSalesFromOpening += amount;
+                  } else if (type == 'income') {
+                    totalIncomeFromOpening += amount;
+                  } else if (type == 'expense') {
+                    totalOutcomeFromOpening += amount;
+                  }
                 }
               }
             } catch (e) {
@@ -326,27 +390,50 @@ class CashRegisterPageState extends State<CashRegisterPage> {
             }
           }
           
+          // Obtener órdenes QR desde apertura
+          try {
+            final orderController = Get.find<OrderController>();
+            
+            for (var order in orderController.orders) {
+              try {
+                final orderDate = DateTime.parse(order['orderDate']?.toString() ?? '');
+                final paymentMethod = order['paymentMethod']?.toString().toLowerCase() ?? '';
+                final totalOrden = (order['totalOrden'] as num?)?.toDouble() ?? 0.0;
+                
+                // Si la orden es después de la apertura de caja y es por QR
+                if (orderDate.isAfter(openingDateTime) && paymentMethod == 'qr') {
+                  totalQRSalesFromOpening += totalOrden;
+                }
+              } catch (e) {
+                continue;
+              }
+            }
+          } catch (e) {
+            // Si no hay OrderController, continuar sin datos de QR
+          }
+          
           // Calcular dinero en caja desde apertura
           totalCashFromOpening = openingAmount + totalSalesFromOpening + totalIncomeFromOpening - totalOutcomeFromOpening;
           expectedAmountFromOpening = openingAmount + totalSalesFromOpening + totalIncomeFromOpening - totalOutcomeFromOpening;
           
         } catch (e) {
-          // Si hay error, usar totales del día
-          totalSalesFromOpening = cashController.totalSalesToday;
-          totalIncomeFromOpening = cashController.totalIncomesToday;
-          totalOutcomeFromOpening = cashController.totalOutcomesToday;
-          totalCashFromOpening = cashController.totalCashInHand;
-          expectedAmountFromOpening = cashController.expectedAmount;
+          // Si hay error en parsing, iniciar con monto de apertura
+          totalCashFromOpening = openingAmount;
+          expectedAmountFromOpening = openingAmount;
         }
+      } else {
+        // Si no hay openingTime, usar solo el monto de apertura
+        totalCashFromOpening = openingAmount;
+        expectedAmountFromOpening = openingAmount;
       }
     } else {
-      // Si caja no está abierta, usar totales del día
-      totalSalesFromOpening = cashController.totalSalesToday;
-      totalIncomeFromOpening = cashController.totalIncomesToday;
-      totalOutcomeFromOpening = cashController.totalOutcomesToday;
-      totalCashFromOpening = cashController.totalCashInHand;
-      expectedAmountFromOpening = cashController.expectedAmount;
+      // Si caja no está abierta, todo en 0
+      totalCashFromOpening = 0;
+      expectedAmountFromOpening = 0;
     }
+    
+    // Restar ventas por QR de ventas totales para obtener solo ventas en efectivo
+    final totalCashSalesFromOpening = totalSalesFromOpening - totalQRSalesFromOpening;
     
     return Card(
       elevation: 4,
@@ -383,9 +470,15 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                 ),
                 _buildMetricCard(
                   'Ventas Efectivo',
-                  cashController.formatCurrency(totalSalesFromOpening),
+                  cashController.formatCurrency(totalCashSalesFromOpening),
                   Icons.point_of_sale,
                   Colors.green,
+                ),
+                _buildMetricCard(
+                  'Ventas por QR',
+                  cashController.formatCurrency(totalQRSalesFromOpening),
+                  Icons.qr_code,
+                  Colors.purple,
                 ),
                 _buildMetricCard(
                   'Entradas',
@@ -935,7 +1028,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               ],
               decoration: InputDecoration(
                 labelText: 'Monto inicial',
-                prefixText: '\Bs ',
+                prefixText: 'Bs. ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1002,7 +1095,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               ],
               decoration: InputDecoration(
                 labelText: 'Monto real',
-                prefixText: '\$ ',
+                prefixText: 'Bs. ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1021,7 +1114,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               final amount = double.tryParse(_closeAmountController.text);
               if (amount != null && amount >= 0) {
                 Get.back();
-                cashController.closeCashRegisterSimple(amount);
+                _closeCashWithReport(amount);
               } else {
                 Get.snackbar('Error', 'Ingrese un monto v�lido');
               }
@@ -1050,7 +1143,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     
     _isDialogOpen = true;
     _incomeAmountController.clear();
-    final descriptionController = TextEditingController();
+    _incomeDescriptionController.clear();
     
     Get.dialog(
       AlertDialog(
@@ -1067,7 +1160,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               ],
               decoration: InputDecoration(
                 labelText: 'Monto',
-                prefixText: '\$ ',
+                prefixText: 'Bs. ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1076,9 +1169,9 @@ class CashRegisterPageState extends State<CashRegisterPage> {
             ),
             SizedBox(height: 16),
             TextFormField(
-              controller: descriptionController,
+              controller: _incomeDescriptionController,
               decoration: InputDecoration(
-                labelText: 'Descripci�n',
+                labelText: 'Descripción',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1091,20 +1184,20 @@ class CashRegisterPageState extends State<CashRegisterPage> {
             onPressed: () {
               Get.back();
               _isDialogOpen = false;
-              descriptionController.dispose();
             },
             child: Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
               final amount = double.tryParse(_incomeAmountController.text);
-              final description = descriptionController.text.trim();
+              final description = _incomeDescriptionController.text.trim();
               
               if (amount != null && amount > 0 && description.isNotEmpty) {
                 Get.back();
                 _isDialogOpen = false;
                 cashController.addCashIncome(amount, description);
-                descriptionController.dispose();
+                _incomeAmountController.clear();
+                _incomeDescriptionController.clear();
               } else {
                 Get.snackbar('Error', 'Complete todos los campos correctamente');
               }
@@ -1144,7 +1237,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) => _OutcomeDialog(
-          availableCash: '\$${availableCash.toStringAsFixed(2)}',
+          availableCash: 'Bs.${availableCash.toStringAsFixed(2)}',
           onConfirm: (String type, double amount, String description) {
             _markDialogClosed();
             cashController.addCashOutcome(amount, description);
@@ -1201,7 +1294,8 @@ class CashRegisterPageState extends State<CashRegisterPage> {
         final double amount = openingAmount is double 
             ? openingAmount 
             : double.parse(openingAmount.toString());
-        return '\$${amount.toStringAsFixed(2)}';
+        final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+        return formatter.format(amount);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1212,7 +1306,178 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     
     return null;
   }
+
+  Future<void> _closeCashWithReport(double actualAmount) async {
+    try {
+      // Verificar que la caja exista antes de acceder
+      if (cashController.currentCashRegister == null) {
+        Get.snackbar(
+          'Error',
+          'No hay caja abierta para generar el reporte',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final cashRegister = cashController.currentCashRegister!;
+      final openingTime = cashRegister['openingTime'] ?? cashRegister['createdAt'];
+      
+      // Obtener datos necesarios para el reporte
+      final openingAmount = (cashRegister['openingAmount'] as num?)?.toDouble() ?? 0.0;
+      
+      // Filtrar movimientos solo desde la apertura de caja
+      List<Map<String, dynamic>> movementsFromOpening = [];
+      double totalIncome = 0.0;
+      double totalExpenses = 0.0;
+      double totalSales = 0.0;
+      double totalQRSales = 0.0;
+      DateTime? openingDateTime;
+      
+      if (openingTime != null) {
+        try {
+          openingDateTime = DateTime.parse(openingTime.toString());
+          
+          for (var movement in cashController.todayMovements) {
+            try {
+              final movementDate = DateTime.parse(
+                movement['createdAt']?.toString() ?? 
+                movement['date']?.toString() ?? 
+                DateTime.now().toIso8601String()
+              );
+              
+              if (movementDate.isAfter(openingDateTime)) {
+                movementsFromOpening.add(movement);
+                
+                final amount = (movement['amount'] ?? 0.0).toDouble();
+                final type = movement['type'] ?? '';
+                
+                if (type == 'sale') {
+                  totalSales += amount;
+                } else if (type == 'income') {
+                  totalIncome += amount;
+                } else if (type == 'expense') {
+                  totalExpenses += amount;
+                }
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+          
+          // Calcular ventas QR desde la apertura de caja
+          try {
+            final orderController = Get.find<OrderController>();
+            
+            for (var order in orderController.orders) {
+              try {
+                final orderDate = DateTime.parse(order['orderDate']?.toString() ?? '');
+                final paymentMethod = order['paymentMethod']?.toString().toLowerCase() ?? '';
+                final totalOrden = (order['totalOrden'] as num?)?.toDouble() ?? 0.0;
+                
+                // Solo incluir órdenes posteriores a la apertura de caja y que sean QR
+                if (orderDate.isAfter(openingDateTime) && paymentMethod == 'qr') {
+                  totalQRSales += totalOrden;
+                }
+              } catch (e) {
+                continue;
+              }
+            }
+          } catch (e) {
+            // Si no hay OrderController, continuar sin datos de QR
+          }
+          
+        } catch (e) {
+          // Si hay error, usar los movimientos del día
+          movementsFromOpening = cashController.todayMovements;
+          totalIncome = cashController.todayMovements
+              .where((m) => m['type'] == 'income')
+              .fold(0.0, (sum, m) => sum + ((m['amount'] ?? 0.0).toDouble()));
+          totalExpenses = cashController.todayMovements
+              .where((m) => m['type'] == 'expense')
+              .fold(0.0, (sum, m) => sum + ((m['amount'] ?? 0.0).toDouble()));
+          totalSales = cashController.todayMovements
+              .where((m) => m['type'] == 'sale')
+              .fold(0.0, (sum, m) => sum + ((m['amount'] ?? 0.0).toDouble()));
+          totalQRSales = _getQRSalesTotal();
+        }
+      }
+      
+      final expectedAmount = openingAmount + totalSales + totalIncome - totalExpenses;
+
+      // Generar el PDF con solo los movimientos del período
+      await PdfService.generateCashClosingReportPdf(
+        cashRegister: cashRegister,
+        totalIncome: totalIncome,
+        totalExpenses: totalExpenses,
+        totalSales: totalSales,
+        totalQRSales: totalQRSales,
+        expectedAmount: expectedAmount,
+        actualAmount: actualAmount,
+        movements: movementsFromOpening,
+        storeName: _getCurrentStoreName(),
+        closingTime: DateTime.now(),
+      );
+
+      // Mostrar mensaje de éxito
+      Get.snackbar(
+        'Reporte Generado',
+        'PDF de cierre de caja generado exitosamente',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+
+      // Cerrar la caja
+      await Future.delayed(const Duration(milliseconds: 500));
+      cashController.closeCashRegisterSimple(actualAmount);
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Error al generar el reporte: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  double _getQRSalesTotal() {
+    try {
+      final orderController = Get.find<OrderController>();
+      final todayStart = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      double totalQR = 0;
+
+      for (var order in orderController.orders) {
+        try {
+          final orderDate = DateTime.parse(order['orderDate']?.toString() ?? '');
+          final paymentMethod = order['paymentMethod']?.toString().toLowerCase() ?? '';
+          final totalOrden = (order['totalOrden'] as num?)?.toDouble() ?? 0.0;
+
+          if (orderDate.year == todayStart.year &&
+              orderDate.month == todayStart.month &&
+              orderDate.day == todayStart.day &&
+              paymentMethod == 'qr') {
+            totalQR += totalOrden;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      return totalQR;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  String _getCurrentStoreName() {
+    try {
+      final storeController = Get.find<StoreController>();
+      return storeController.currentStore?['name'] ?? 'Tienda';
+    } catch (e) {
+      return 'Tienda';
+    }
+  }
 }
+
 
 class _OutcomeDialog extends StatefulWidget {
   final Function(String type, double amount, String description) onConfirm;
@@ -1260,7 +1525,7 @@ class _OutcomeDialogState extends State<_OutcomeDialog> {
             controller: amountController,
             decoration: const InputDecoration(
               labelText: 'Monto',
-              prefixText: '\$',
+              prefixText: 'Bs. ',
               border: OutlineInputBorder(),
             ),
             keyboardType: TextInputType.number,
@@ -1269,7 +1534,7 @@ class _OutcomeDialogState extends State<_OutcomeDialog> {
           TextField(
             controller: descriptionController,
             decoration: const InputDecoration(
-              labelText: 'Descripci�n',
+              labelText: 'Descripción',
               border: OutlineInputBorder(),
             ),
           ),

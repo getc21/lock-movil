@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../providers/cash_register_provider.dart';
 import '../utils/time_utils.dart';
 import 'auth_controller.dart';
@@ -80,7 +81,8 @@ class CashController extends GetxController {
   
   // Método auxiliar para formatear moneda
   String formatCurrency(double amount) {
-    return '\$${amount.toStringAsFixed(2)}';
+    final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+    return formatter.format(amount);
   }
 
   // Crear caja registradora

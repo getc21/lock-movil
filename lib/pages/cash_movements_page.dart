@@ -14,6 +14,27 @@ class CashMovementsPage extends StatefulWidget {
   CashMovementsPageState createState() => CashMovementsPageState();
 }
 
+// Constantes de estilos para consistencia
+const double _defaultPadding = 16.0;
+const double _defaultBorderRadius = 12.0;
+const double _cardElevation = 2.0;
+
+final Map<String, Color> _movementTypeColors = {
+  'income': Colors.green,
+  'expense': Colors.red,
+  'sale': Colors.blue,
+  'opening': Colors.orange,
+  'closing': Colors.purple,
+};
+
+final Map<String, IconData> _movementTypeIcons = {
+  'income': Icons.add_circle,
+  'expense': Icons.remove_circle,
+  'sale': Icons.shopping_cart,
+  'opening': Icons.lock_open,
+  'closing': Icons.lock,
+};
+
 class CashMovementsPageState extends State<CashMovementsPage> {
   late CashController cashController;
   final TextEditingController _amountController = TextEditingController();
@@ -48,8 +69,50 @@ class CashMovementsPageState extends State<CashMovementsPage> {
     super.dispose();
   }
 
+  String _formatCurrency(double amount) {
+    final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+    return formatter.format(amount);
+  }
+
   Future<void> _loadMovements() async {
     await cashController.loadMovementsByDate(_selectedDate);
+  }
+
+  List<Map<String, dynamic>> _getMovementsFromCurrentOpening() {
+    // Si no hay caja abierta, retornar lista vacía
+    if (!cashController.isCashRegisterOpen || cashController.currentCashRegister == null) {
+      return [];
+    }
+
+    // Obtener hora de apertura de la caja actual
+    final currentRegister = cashController.currentCashRegister;
+    final openingTime = currentRegister!['openingTime'] ?? currentRegister['createdAt'];
+    
+    if (openingTime == null) {
+      return cashController.todayMovements;
+    }
+
+    try {
+      final openingDateTime = DateTime.parse(openingTime.toString());
+      
+      // Filtrar movimientos posteriores a la apertura
+      return cashController.todayMovements
+          .where((movement) {
+            try {
+              final movementDate = DateTime.parse(
+                movement['createdAt']?.toString() ?? 
+                movement['date']?.toString() ?? 
+                DateTime.now().toIso8601String()
+              );
+              return movementDate.isAfter(openingDateTime);
+            } catch (e) {
+              return false;
+            }
+          })
+          .toList();
+    } catch (e) {
+      return cashController.todayMovements;
+    }
   }
 
   @override
@@ -92,11 +155,11 @@ class CashMovementsPageState extends State<CashMovementsPage> {
 
   Widget _buildHeader() {
     return Container(
-      padding: EdgeInsets.all(16),
-      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(_defaultPadding),
+      margin: EdgeInsets.all(_defaultPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_defaultBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.1),
@@ -116,25 +179,33 @@ class CashMovementsPageState extends State<CashMovementsPage> {
               color: Utils.colorGnav,
             ),
           ),
-          SizedBox(height: 12),
+          SizedBox(height: _defaultPadding),
           Obx(() {
             final movements = _getFilteredMovements();
             final totalIncome = movements
                 .where((m) => m['type'] == 'income' || m['type'] == 'sale')
                 .fold(0.0, (sum, m) => sum + ((m['amount'] ?? 0.0).toDouble()));
             final totalOutcome = movements
-                .where((m) => m['type'] == 'expense')  // Cambiado de 'outcome' a 'expense'
+                .where((m) => m['type'] == 'expense')
                 .fold(0.0, (sum, m) => sum + ((m['amount'] ?? 0.0).toDouble()));
-            final netTotal = totalIncome - totalOutcome;
+            
+            // Calcular monto esperado igual que en cash_register_page
+            double expectedAmount = 0.0;
+            if (cashController.isCashRegisterOpen && cashController.currentCashRegister != null) {
+              final openingAmount = (cashController.currentCashRegister!['openingAmount'] ?? 0.0).toDouble();
+              expectedAmount = openingAmount + totalIncome - totalOutcome;
+            } else {
+              expectedAmount = cashController.expectedAmount;
+            }
 
             return Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildSummaryCard('Ingresos', totalIncome, Colors.green, Icons.trending_up),
                 _buildSummaryCard('Egresos', totalOutcome, Colors.red, Icons.trending_down),
-                _buildSummaryCard('Total', netTotal, 
-                  netTotal >= 0 ? Colors.green : Colors.red, 
-                  netTotal >= 0 ? Icons.trending_up : Icons.trending_down),
+                _buildSummaryCard('Monto esperado', expectedAmount, 
+                  expectedAmount >= 0 ? Colors.green : Colors.red, 
+                  expectedAmount >= 0 ? Icons.trending_up : Icons.trending_down),
               ],
             );
           }),
@@ -144,10 +215,11 @@ class CashMovementsPageState extends State<CashMovementsPage> {
   }
 
   Widget _buildSummaryCard(String title, double amount, Color color, IconData icon) {
+    final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
-        SizedBox(height: 4),
+        SizedBox(height: _defaultPadding / 4),
         Text(
           title,
           style: TextStyle(
@@ -157,7 +229,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
           ),
         ),
         Text(
-          '\$${amount.toStringAsFixed(2)}',
+          formatter.format(amount),
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -171,16 +243,16 @@ class CashMovementsPageState extends State<CashMovementsPage> {
   Widget _buildFilters() {
     return Container(
       height: 50,
-      margin: EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: _defaultPadding),
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _buildFilterChip('Todos', 'todos'),
-          SizedBox(width: 8),
+          SizedBox(width: _defaultPadding / 2),
           _buildFilterChip('Entradas', 'income'),
-          SizedBox(width: 8),
+          SizedBox(width: _defaultPadding / 2),
           _buildFilterChip('Salidas', 'expense'),
-          SizedBox(width: 8),
+          SizedBox(width: _defaultPadding / 2),
           _buildFilterChip('Ventas', 'sale'),
         ],
       ),
@@ -195,6 +267,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
         style: TextStyle(
           color: isSelected ? Colors.white : Utils.colorGnav,
           fontWeight: FontWeight.w500,
+          fontSize: 14,
         ),
       ),
       selected: isSelected,
@@ -206,6 +279,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
       selectedColor: Utils.colorGnav,
       backgroundColor: Colors.grey[100],
       checkmarkColor: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: _defaultPadding / 2, vertical: _defaultPadding / 4),
     );
   }
 
@@ -261,48 +335,27 @@ class CashMovementsPageState extends State<CashMovementsPage> {
   }
 
   Widget _buildMovementCard(Map<String, dynamic> movement) {
-    Color typeColor;
-    IconData typeIcon;
-    String typeText;
-
     final movementType = movement['type'] ?? '';
-    switch (movementType) {
-      case 'income':
-        typeColor = Colors.green;
-        typeIcon = Icons.add_circle;
-        typeText = 'Entrada';
-        break;
-      case 'expense':  // Cambiado de 'outcome' a 'expense'
-        typeColor = Colors.red;
-        typeIcon = Icons.remove_circle;
-        typeText = 'Salida';
-        break;
-      case 'sale':
-        typeColor = Colors.blue;
-        typeIcon = Icons.shopping_cart;
-        typeText = 'Venta';
-        break;
-      case 'opening':
-        typeColor = Colors.orange;
-        typeIcon = Icons.lock_open;
-        typeText = 'Apertura';
-        break;
-      case 'closing':
-        typeColor = Colors.purple;
-        typeIcon = Icons.lock;
-        typeText = 'Cierre';
-        break;
-      default:
-        typeColor = Colors.grey;
-        typeIcon = Icons.help;
-        typeText = 'Desconocido';
-    }
+    
+    // Use color and icon from maps
+    final typeColor = _movementTypeColors[movementType] ?? Colors.grey;
+    final typeIcon = _movementTypeIcons[movementType] ?? Icons.help;
+    
+    // Define type text mapping
+    final typeTextMap = {
+      'income': 'Entrada',
+      'expense': 'Salida',
+      'sale': 'Venta',
+      'opening': 'Apertura',
+      'closing': 'Cierre',
+    };
+    final typeText = typeTextMap[movementType] ?? 'Desconocido';
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: _defaultPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_defaultBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.1),
@@ -313,7 +366,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
         ],
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: EdgeInsets.all(_defaultPadding),
         leading: Container(
           width: 50,
           height: 50,
@@ -337,7 +390,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 4),
+            SizedBox(height: _defaultPadding / 4),
             Text(
               typeText,
               style: TextStyle(
@@ -346,7 +399,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
                 fontSize: 12,
               ),
             ),
-            SizedBox(height: 2),
+            SizedBox(height: _defaultPadding / 8),
             Text(
               DateFormat('HH:mm').format(TimeUtils.toBoliviaTime(DateTime.parse(movement['createdAt'] ?? DateTime.now().toIso8601String()))),
               style: TextStyle(
@@ -357,7 +410,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
           ],
         ),
         trailing: Text(
-          '\$${((movement['amount'] ?? 0.0).toDouble()).toStringAsFixed(2)}',
+          _formatCurrency(((movement['amount'] ?? 0.0).toDouble())),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -369,10 +422,12 @@ class CashMovementsPageState extends State<CashMovementsPage> {
   }
 
   List<Map<String, dynamic>> _getFilteredMovements() {
+    final movementsFromOpening = _getMovementsFromCurrentOpening();
+    
     if (_filterType == 'todos') {
-      return cashController.todayMovements.toList();
+      return movementsFromOpening.toList();
     }
-    return cashController.todayMovements
+    return movementsFromOpening
         .where((movement) => movement['type'] == _filterType)
         .toList();
   }
@@ -433,29 +488,29 @@ class CashMovementsPageState extends State<CashMovementsPage> {
                         });
                       },
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: _defaultPadding),
                     TextFormField(
                       controller: _amountController,
                       decoration: InputDecoration(
                         labelText: 'Monto',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(_defaultBorderRadius),
                         ),
                         prefixIcon: Icon(Icons.attach_money),
-                        prefixText: '\$',
+                        prefixText: 'Bs. ',
                       ),
                       keyboardType: TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: _defaultPadding),
                     TextFormField(
                       controller: _descriptionController,
                       decoration: InputDecoration(
                         labelText: 'Descripción',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(_defaultBorderRadius),
                         ),
                         prefixIcon: Icon(Icons.description),
                       ),

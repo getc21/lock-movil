@@ -283,20 +283,29 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
   }
 
   Widget _buildQrFields() {
-    return TextField(
-      decoration: InputDecoration(
-        labelText: 'Referencia de Pago QR',
-        hintText: 'Número de operación o código de confirmación',
-        prefixIcon: const Icon(Icons.qr_code),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Utils.colorBotones, width: 2),
-        ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Utils.colorBotones.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Utils.colorBotones.withValues(alpha: 0.3)),
       ),
-      onChanged: (value) => paymentController.updateTransferReference(value),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: Utils.colorBotones, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'El pago será procesado. Verifica la llegada del dinero a tu cuenta.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Utils.colorBotones,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

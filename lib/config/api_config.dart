@@ -11,7 +11,7 @@ class ApiConfig {
 
   static String get baseUrl {
     // EN DESARROLLO: Usar IP local
-    return 'http://192.168.1.147:3000/api';
+    return 'http://192.168.0.48:3000/api';
     
     // PRODUCCION - Usar URL remota (comentado)
     // return _productionUrl;

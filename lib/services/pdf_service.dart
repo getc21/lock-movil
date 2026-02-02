@@ -18,6 +18,17 @@ class PdfService {
     return utcNow.add(const Duration(hours: -4));
   }
 
+  // Convertir una DateTime UTC a hora de Bolivia (UTC-4)
+  static DateTime _convertToBoliviaTime(DateTime utcDateTime) {
+    // Si la DateTime ya tiene offset, convertir a UTC primero
+    if (utcDateTime.isUtc) {
+      return utcDateTime.add(const Duration(hours: -4));
+    } else {
+      // Si es local, asumir que es UTC y convertir
+      return utcDateTime.toUtc().add(const Duration(hours: -4));
+    }
+  }
+
   // REPORT GENERATION METHODS
   
   static Future<String> generateQuotationPdf({
@@ -807,5 +818,329 @@ class PdfService {
       rethrow;
     }
   }
+
+  // CASH CLOSING REPORT
+  static Future<String> generateCashClosingReportPdf({
+    required Map<String, dynamic> cashRegister,
+    required double totalIncome,
+    required double totalExpenses,
+    required double totalSales,
+    required double totalQRSales,
+    required double expectedAmount,
+    required double actualAmount,
+    required List<Map<String, dynamic>> movements,
+    required String storeName,
+    DateTime? closingTime,
+  }) async {
+    final pdf = pw.Document();
+    final formatter = DateFormat('dd/MM/yyyy HH:mm');
+    final dateOnlyFormatter = DateFormat('dd/MM/yyyy');
+    final currencyFormatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
+
+    // Calcular diferencia
+    final difference = actualAmount - expectedAmount;
+    final hasSurplus = difference > 0;
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(20),
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'INFORME DE CIERRE DE CAJA',
+                      style: pw.TextStyle(
+                        fontSize: 20,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Tienda: $storeName',
+                      style: const pw.TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'Fecha: ${dateOnlyFormatter.format(_getBoliviaTime())}',
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Hora: ${formatter.format(_getBoliviaTime()).split(' ')[1]}',
+                      style: const pw.TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 10),
+            pw.Divider(),
+          ],
+        ),
+        footer: (context) => pw.Column(
+          children: [
+            pw.Divider(),
+            pw.SizedBox(height: 5),
+            pw.Text(
+              'Página ${context.pageNumber} de ${context.pagesCount}',
+              style: const pw.TextStyle(fontSize: 9),
+              textAlign: pw.TextAlign.center,
+            ),
+          ],
+        ),
+        build: (context) => [
+          // RESUMEN DE APERTURA
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '1. DATOS DE APERTURA',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Container(
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(),
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                padding: const pw.EdgeInsets.all(10),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Hora de Apertura:',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          'Hora de Cierre:',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          'Monto de Apertura:',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          formatter.format(
+                            _convertToBoliviaTime(
+                              DateTime.parse(cashRegister['openingTime'] ?? cashRegister['createdAt'] ?? DateTime.now().toString()),
+                            ),
+                          ),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          formatter.format(
+                            _convertToBoliviaTime(closingTime ?? DateTime.now()),
+                          ),
+                        ),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          currencyFormatter.format(
+                            (cashRegister['openingAmount'] as num?)?.toDouble() ?? 0.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 15),
+
+          // RESUMEN FINANCIERO
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '2. RESUMEN FINANCIERO',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              _buildSummaryTable(
+                currencyFormatter,
+                [
+                  ['Monto Inicial', currencyFormatter.format((cashRegister['openingAmount'] as num?)?.toDouble() ?? 0.0)],
+                  ['Ventas en Efectivo', currencyFormatter.format(totalSales - totalQRSales)],
+                  ['Ventas por QR', currencyFormatter.format(totalQRSales)],
+                  ['Entradas de Dinero', currencyFormatter.format(totalIncome)],
+                  ['Salidas de Dinero', currencyFormatter.format(totalExpenses)],
+                  ['Monto Esperado', currencyFormatter.format(expectedAmount)],
+                  ['Monto Real Contado', currencyFormatter.format(actualAmount)],
+                  [
+                    hasSurplus ? 'Sobrante' : 'Faltante',
+                    currencyFormatter.format(difference.abs()),
+                  ],
+                ],
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 15),
+
+          // DETALLE DE MOVIMIENTOS - COMPLETO
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '3. DETALLE COMPLETO DE MOVIMIENTOS',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              movements.isNotEmpty
+                ? pw.TableHelper.fromTextArray(
+                    headers: ['Hora', 'Tipo', 'Descripción', 'Monto'],
+                    data: movements.map((movement) {
+                      final type = movement['type'] ?? '';
+                      final typeLabel = _getMovementTypeLabel(type);
+                      final amount = (movement['amount'] as num?)?.toDouble() ?? 0.0;
+                      final amountStr = type == 'expense' || type == 'closing'
+                          ? '- ${currencyFormatter.format(amount)}'
+                          : '+ ${currencyFormatter.format(amount)}';
+                      
+                      // Truncar descripción si es muy larga
+                      String description = movement['description'] ?? '';
+                      if (description.length > 30) {
+                        description = description.substring(0, 30);
+                      }
+
+                      return [
+                        DateFormat('HH:mm').format(
+                          DateTime.parse(movement['createdAt'] ?? DateTime.now().toString()),
+                        ),
+                        typeLabel,
+                        description,
+                        amountStr,
+                      ];
+                    }).toList(),
+                    border: pw.TableBorder.all(width: 0.5),
+                    headerDecoration: pw.BoxDecoration(
+                      color: const PdfColor.fromInt(0xFFE0E0E0),
+                    ),
+                    headerHeight: 22,
+                    cellHeight: 18,
+                    cellPadding: const pw.EdgeInsets.all(4),
+                    cellAlignment: pw.Alignment.centerLeft,
+                    columnWidths: {
+                      0: const pw.FlexColumnWidth(0.8),
+                      1: const pw.FlexColumnWidth(0.9),
+                      2: const pw.FlexColumnWidth(2.0),
+                      3: const pw.FlexColumnWidth(1.3),
+                    },
+                    cellStyle: const pw.TextStyle(fontSize: 9),
+                    headerStyle: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  )
+                : pw.Text('No hay movimientos registrados'),
+            ],
+          ),
+
+          pw.SizedBox(height: 20),
+
+          // FIRMA
+          pw.Container(
+            padding: const pw.EdgeInsets.only(top: 20),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  children: [
+                    pw.SizedBox(height: 40),
+                    pw.Text('_' * 30),
+                    pw.Text(
+                      'Responsable',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  children: [
+                    pw.SizedBox(height: 40),
+                    pw.Text('_' * 30),
+                    pw.Text(
+                      'Gerente',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final filename = 'cierre_caja_${DateFormat('yyyyMMdd_HHmmss').format(_getBoliviaTime())}';
+    return await _savePdf(pdf, filename);
+  }
+
+  static pw.Widget _buildSummaryTable(
+    NumberFormat currencyFormatter,
+    List<List<String>> data,
+  ) {
+    return pw.TableHelper.fromTextArray(
+      headers: ['Concepto', 'Monto'],
+      data: data,
+      border: pw.TableBorder.all(width: 0.5),
+      headerDecoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFE0E0E0),
+      ),
+      headerHeight: 25,
+      cellPadding: const pw.EdgeInsets.all(8),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2),
+        1: const pw.FlexColumnWidth(1.5),
+      },
+    );
+  }
+
+  static String _getMovementTypeLabel(String type) {
+    switch (type) {
+      case 'income':
+        return 'Entrada';
+      case 'expense':
+        return 'Salida';
+      case 'sale':
+        return 'Venta';
+      case 'opening':
+        return 'Apertura';
+      case 'closing':
+        return 'Cierre';
+      default:
+        return type;
+    }
+  }
 }
+
 

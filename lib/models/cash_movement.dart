@@ -1,4 +1,5 @@
 import 'package:bellezapp/utils/time_utils.dart';
+import 'package:intl/intl.dart';
 
 class CashMovement {
   final int? id;
@@ -115,8 +116,9 @@ class CashMovement {
   }
   
   String get formattedAmount {
+    final formatter = NumberFormat.currency(symbol: 'Bs.', decimalDigits: 2);
     final String sign = isOutcome ? '-' : '+';
-    return '$sign\$${amount.toStringAsFixed(2)}';
+    return '$sign${formatter.format(amount)}';
   }
 
   String get typeDisplayName {

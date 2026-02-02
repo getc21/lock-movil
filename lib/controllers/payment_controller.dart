@@ -75,14 +75,7 @@ class PaymentController extends GetxController {
         break;
         
       case PaymentMethod.qr:
-        if (qrReference.value.trim().isEmpty) {
-          validationError.value = 'Debe ingresar la referencia del pago QR';
-          return false;
-        }
-        if (qrReference.value.trim().length < 4) {
-          validationError.value = 'La referencia debe tener al menos 4 caracteres';
-          return false;
-        }
+        // QR no requiere validación adicional
         break;
     }
     
@@ -113,12 +106,7 @@ class PaymentController extends GetxController {
         break;
         
       case PaymentMethod.qr:
-        if (qrReference.value.trim().isEmpty) {
-          return 'Debe ingresar la referencia del pago QR';
-        }
-        if (qrReference.value.trim().length < 4) {
-          return 'La referencia debe tener al menos 4 caracteres';
-        }
+        // QR no requiere validación adicional
         break;
     }
     
