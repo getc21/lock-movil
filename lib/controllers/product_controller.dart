@@ -328,6 +328,7 @@ class ProductController extends GetxController {
     required String id,
     required int quantity,
     required String operation, // add, remove, set
+    double? purchasePrice,
   }) async {
     _isLoading.value = true;
 
@@ -351,6 +352,7 @@ class ProductController extends GetxController {
         quantity: quantity,
         operation: operation,
         storeId: currentStoreId,
+        purchasePrice: purchasePrice,
       );
 
       if (result['success']) {

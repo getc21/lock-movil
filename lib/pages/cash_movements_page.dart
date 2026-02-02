@@ -1,5 +1,6 @@
 import 'package:bellezapp/controllers/cash_controller.dart';
 import 'package:bellezapp/utils/utils.dart';
+import 'package:bellezapp/utils/time_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -347,7 +348,7 @@ class CashMovementsPageState extends State<CashMovementsPage> {
             ),
             SizedBox(height: 2),
             Text(
-              DateFormat('HH:mm').format(DateTime.parse(movement['createdAt'] ?? DateTime.now().toIso8601String())),
+              DateFormat('HH:mm').format(TimeUtils.toBoliviaTime(DateTime.parse(movement['createdAt'] ?? DateTime.now().toIso8601String()))),
               style: TextStyle(
                 color: Colors.grey[600],
                 fontSize: 12,

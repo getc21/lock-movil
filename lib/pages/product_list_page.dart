@@ -143,6 +143,7 @@ class ProductListPageState extends State<ProductListPage> {
 
   void _showAddStockDialog(String productId, String productName) {
     final stockController = TextEditingController();
+    final priceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -306,6 +307,59 @@ class ProductListPageState extends State<ProductListPage> {
                           },
                         ),
                       ),
+                      SizedBox(height: 16),
+
+                      // Campo de precio de compra unitario
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: TextFormField(
+                          controller: priceController,
+                          keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          cursorColor: Utils.colorBotones,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Utils.colorBotones,
+                          ),
+                          decoration: InputDecoration(
+                            prefixIcon: Padding(
+                              padding: EdgeInsets.only(left: 16),
+                              child: Icon(
+                                Icons.attach_money,
+                                color: Colors.orange,
+                                size: 24,
+                              ),
+                            ),
+                            prefixText: 'Bs. ',
+                            prefixStyle: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            hintText: 'Precio unitario',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 0),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Ingresa el precio de compra';
+                            }
+                            final price = double.tryParse(value);
+                            if (price == null || price <= 0) {
+                              return 'Precio debe ser mayor a 0';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
                       SizedBox(height: 8),
 
                       // Texto de ayuda
@@ -319,7 +373,7 @@ class ProductListPageState extends State<ProductListPage> {
                           ),
                           SizedBox(width: 6),
                           Text(
-                            'Ingresa la cantidad a agregar al inventario',
+                            'Este será registrado como inversión en inventario',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 12,
@@ -392,6 +446,9 @@ class ProductListPageState extends State<ProductListPage> {
                                     final stockToAdd = int.parse(
                                       stockController.text,
                                     );
+                                    final purchasePrice = double.parse(
+                                      priceController.text,
+                                    );
                                     Navigator.of(context).pop();
 
                                     final success = await productController
@@ -399,6 +456,7 @@ class ProductListPageState extends State<ProductListPage> {
                                           id: productId,
                                           quantity: stockToAdd,
                                           operation: 'add',
+                                          purchasePrice: purchasePrice,
                                         );
 
                                     if (success) {

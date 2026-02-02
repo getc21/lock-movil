@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/returns/return_models.dart';
+import '../../config/api_config.dart';
 
 class ReturnsService {
   final Dio dio;
-  final String baseUrl = 'http://192.168.0.48:3000/api';
+  
+  // Usar baseUrl centralizado de ApiConfig
+  String get baseUrl => ApiConfig.baseUrl;
 
   ReturnsService(this.dio) {
     _configureDio();
@@ -13,8 +16,8 @@ class ReturnsService {
   // Configurar Dio con autenticación
   void _configureDio() {
     dio.options.baseUrl = baseUrl;
-    dio.options.connectTimeout = const Duration(seconds: 30);
-    dio.options.receiveTimeout = const Duration(seconds: 30);
+    dio.options.connectTimeout = const Duration(seconds: 60);
+    dio.options.receiveTimeout = const Duration(seconds: 60);
     
     // Agregar interceptor para token
     dio.interceptors.add(

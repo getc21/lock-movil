@@ -11,6 +11,13 @@ class PdfService {
   // Private constructor to prevent instantiation
   PdfService._();
 
+  // Obtener hora actual de Bolivia (UTC-4)
+  static DateTime _getBoliviaTime() {
+    // Bolivia está en zona UTC-4
+    final utcNow = DateTime.now().toUtc();
+    return utcNow.add(const Duration(hours: -4));
+  }
+
   // REPORT GENERATION METHODS
   
   static Future<String> generateQuotationPdf({
@@ -53,7 +60,7 @@ class PdfService {
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
                     pw.Text(
-                      'Fecha: ${formatter.format(DateTime.parse(quotation['quotationDate'] ?? DateTime.now().toIso8601String()))}',
+                      'Fecha: ${formatter.format(_getBoliviaTime())}',
                       style: const pw.TextStyle(fontSize: 11),
                     ),
                     pw.SizedBox(height: 4),
@@ -181,7 +188,7 @@ class PdfService {
       ),
     );
 
-    return await _savePdf(pdf, 'Cotizacion_${DateTime.now().millisecondsSinceEpoch}');
+    return await _savePdf(pdf, 'Cotizacion_${_getBoliviaTime().millisecondsSinceEpoch}');
   }
 
   static Future<String> generateInventoryRotationPdf({
@@ -226,7 +233,7 @@ class PdfService {
     );
 
     return await _savePdf(pdf,
-        'Rotacion_Inventario_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+        'Rotacion_Inventario_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateProfitabilityPdf({
@@ -273,7 +280,7 @@ class PdfService {
     );
 
     return await _savePdf(pdf,
-        'Rentabilidad_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+        'Rentabilidad_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateSalesTrendsPdf({
@@ -324,7 +331,7 @@ class PdfService {
     );
 
     return await _savePdf(pdf,
-        'Tendencias_Ventas_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+        'Tendencias_Ventas_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   static Future<String> generateComparisonPdf({
@@ -365,7 +372,7 @@ class PdfService {
     );
 
     return await _savePdf(pdf,
-        'Comparativo_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+        'Comparativo_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   // Generate PDF for returns/devoluciones list
@@ -386,7 +393,7 @@ class PdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(30),
         build: (context) => [
-          _buildHeader('Reporte de Devoluciones', DateTime.now(), DateTime.now()),
+          _buildHeader('Reporte de Devoluciones', _getBoliviaTime(), _getBoliviaTime()),
           pw.SizedBox(height: 10),
           pw.Text(
             'Tienda: $storeName',
@@ -400,7 +407,7 @@ class PdfService {
             [
               ('Total de Devoluciones', totalReturns.toString()),
               ('Total Dinero Devuelto', '\$${totalRefunded.toStringAsFixed(2)}'),
-              ('Fecha', DateFormat('dd/MM/yyyy').format(DateTime.now())),
+              ('Fecha', DateFormat('dd/MM/yyyy').format(_getBoliviaTime())),
             ],
           ),
           pw.SizedBox(height: 20),
@@ -421,7 +428,7 @@ class PdfService {
     );
 
     return await _savePdf(pdf,
-        'Devoluciones_${DateFormat('dd-MM-yyyy').format(DateTime.now())}');
+        'Devoluciones_${DateFormat('dd-MM-yyyy').format(_getBoliviaTime())}');
   }
 
   // Helper methods for PDF building

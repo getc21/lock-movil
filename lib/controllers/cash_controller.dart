@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../providers/cash_register_provider.dart';
+import '../utils/time_utils.dart';
 import 'auth_controller.dart';
 
 class CashController extends GetxController {

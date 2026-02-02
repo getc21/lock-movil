@@ -266,6 +266,7 @@ class ProductProvider {
     required int quantity,
     required String operation, // 'add' o 'subtract'
     required String storeId,
+    double? purchasePrice,
   }) async {
     try {
       final response = await http.patch(
@@ -275,6 +276,7 @@ class ProductProvider {
           'quantity': quantity,
           'operation': operation,
           'storeId': storeId,
+          if (purchasePrice != null) 'purchasePrice': purchasePrice,
         }),
       );
       final data = jsonDecode(response.body);

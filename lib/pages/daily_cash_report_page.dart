@@ -1,6 +1,7 @@
 import 'package:bellezapp/controllers/cash_controller.dart';
 import 'package:bellezapp/models/cash_movement.dart';
 import 'package:bellezapp/utils/utils.dart';
+import 'package:bellezapp/utils/time_utils.dart';
 import 'package:bellezapp/widgets/store_aware_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -88,7 +89,9 @@ class DailyCashReportPageState extends State<DailyCashReportPage> {
 
     // Sumar movimientos por hora
     for (var movement in _dailyMovements) {
-      final hour = movement.createdAt.hour;
+      // Convertir a hora de Bolivia
+      final boliviaTime = TimeUtils.toBoliviaTime(movement.createdAt);
+      final hour = boliviaTime.hour;
       final amount = movement.type == 'expense'
           ? -movement.amount
           : movement.amount;

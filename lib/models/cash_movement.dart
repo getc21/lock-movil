@@ -1,3 +1,5 @@
+import 'package:bellezapp/utils/time_utils.dart';
+
 class CashMovement {
   final int? id;
   final String date;
@@ -93,18 +95,22 @@ class CashMovement {
   bool get isOutcome => type == 'expense' || type == 'salida';
   bool get isSpecial => type == 'opening' || type == 'apertura' || type == 'closing' || type == 'cierre';
   
-  // Parsear la fecha string a DateTime
+  // Parsear la fecha string a DateTime en zona horaria de Bolivia
   DateTime get createdAt {
     try {
+      DateTime parsedDate;
       // Si la fecha incluye hora (formato: "2024-10-24 10:30:00")
       if (date.contains(' ')) {
-        return DateTime.parse(date);
+        parsedDate = DateTime.parse(date);
+      } else {
+        // Si solo es fecha (formato: "2024-10-24")
+        parsedDate = DateTime.parse(date);
       }
-      // Si solo es fecha (formato: "2024-10-24")
-      return DateTime.parse(date);
+      // Convertir a zona horaria de Bolivia
+      return TimeUtils.toBoliviaTime(parsedDate);
     } catch (e) {
       // Fallback a fecha actual si hay error
-      return DateTime.now();
+      return TimeUtils.getBoliviaTime();
     }
   }
   

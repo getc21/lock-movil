@@ -3,6 +3,7 @@ import 'package:bellezapp/models/cash_movement.dart';
 import 'package:bellezapp/pages/daily_cash_report_page.dart';
 import 'package:bellezapp/pages/cash_movements_page.dart';
 import 'package:bellezapp/utils/utils.dart';
+import 'package:bellezapp/utils/time_utils.dart';
 import 'package:bellezapp/widgets/store_aware_app_bar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -283,6 +284,70 @@ class CashRegisterPageState extends State<CashRegisterPage> {
 
   // Card del resumen del d�a
   Widget _buildDailySummaryCard() {
+    // Calcular totales desde apertura de caja
+    double totalSalesFromOpening = 0;
+    double totalIncomeFromOpening = 0;
+    double totalOutcomeFromOpening = 0;
+    double totalCashFromOpening = 0;
+    double expectedAmountFromOpening = 0;
+    
+    if (cashController.isCashRegisterOpen && cashController.currentCashRegister != null) {
+      final openingTime = cashController.currentCashRegister!['openingTime'] ?? 
+                         cashController.currentCashRegister!['createdAt'];
+      final openingAmount = (cashController.currentCashRegister!['openingAmount'] ?? 0.0).toDouble();
+      
+      if (openingTime != null) {
+        try {
+          final openingDateTime = DateTime.parse(openingTime.toString());
+          
+          // Filtrar movimientos posteriores a apertura
+          for (var movement in cashController.todayMovements) {
+            try {
+              final movementDate = DateTime.parse(
+                movement['createdAt']?.toString() ?? 
+                movement['date']?.toString() ?? 
+                DateTime.now().toIso8601String()
+              );
+              
+              if (movementDate.isAfter(openingDateTime)) {
+                final amount = (movement['amount'] ?? 0.0).toDouble();
+                final type = movement['type'] ?? '';
+                
+                if (type == 'sale') {
+                  totalSalesFromOpening += amount;
+                } else if (type == 'income') {
+                  totalIncomeFromOpening += amount;
+                } else if (type == 'expense') {
+                  totalOutcomeFromOpening += amount;
+                }
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+          
+          // Calcular dinero en caja desde apertura
+          totalCashFromOpening = openingAmount + totalSalesFromOpening + totalIncomeFromOpening - totalOutcomeFromOpening;
+          expectedAmountFromOpening = openingAmount + totalSalesFromOpening + totalIncomeFromOpening - totalOutcomeFromOpening;
+          
+        } catch (e) {
+          // Si hay error, usar totales del día
+          totalSalesFromOpening = cashController.totalSalesToday;
+          totalIncomeFromOpening = cashController.totalIncomesToday;
+          totalOutcomeFromOpening = cashController.totalOutcomesToday;
+          totalCashFromOpening = cashController.totalCashInHand;
+          expectedAmountFromOpening = cashController.expectedAmount;
+        }
+      }
+    } else {
+      // Si caja no está abierta, usar totales del día
+      totalSalesFromOpening = cashController.totalSalesToday;
+      totalIncomeFromOpening = cashController.totalIncomesToday;
+      totalOutcomeFromOpening = cashController.totalOutcomesToday;
+      totalCashFromOpening = cashController.totalCashInHand;
+      expectedAmountFromOpening = cashController.expectedAmount;
+    }
+    
     return Card(
       elevation: 4,
       color: Utils.colorFondoCards,
@@ -293,7 +358,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Resumen del Día',
+              cashController.isCashRegisterOpen ? 'Resumen desde Apertura' : 'Resumen del Día',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -301,37 +366,36 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               ),
             ),
             SizedBox(height: 16),
-            
-            // Grid de m�tricas
+            // Grid de métricas
             GridView.count(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-                              childAspectRatio: 1.6, // Reducir altura para evitar overflow
+                              childAspectRatio: 1.6,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               children: [
                 _buildMetricCard(
                   'Dinero en Caja',
-                  cashController.formatCurrency(cashController.totalCashInHand),
+                  cashController.formatCurrency(totalCashFromOpening),
                   Icons.account_balance_wallet,
                   Colors.blue,
                 ),
                 _buildMetricCard(
                   'Ventas Efectivo',
-                  cashController.formatCurrency(cashController.totalSalesToday),
+                  cashController.formatCurrency(totalSalesFromOpening),
                   Icons.point_of_sale,
                   Colors.green,
                 ),
                 _buildMetricCard(
                   'Entradas',
-                  cashController.formatCurrency(cashController.totalIncomesToday),
+                  cashController.formatCurrency(totalIncomeFromOpening),
                   Icons.trending_up,
                   Colors.teal,
                 ),
                 _buildMetricCard(
                   'Salidas',
-                  cashController.formatCurrency(cashController.totalOutcomesToday),
+                  cashController.formatCurrency(totalOutcomeFromOpening),
                   Icons.trending_down,
                   Colors.red,
                 ),
@@ -364,7 +428,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                       ),
                     ),
                     Text(
-                      cashController.formatCurrency(cashController.expectedAmount),
+                      cashController.formatCurrency(expectedAmountFromOpening),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -632,9 +696,44 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     );
   }
 
-  // Card de movimientos recientes
+  // Card de movimientos recientes (desde apertura de caja)
   Widget _buildRecentMovementsCard() {
-    final recentMovements = cashController.todayMovements.take(5).toList();
+    // Obtener movimientos desde la apertura de caja
+    List<Map<String, dynamic>> recentMovements = [];
+    
+    if (cashController.isCashRegisterOpen && cashController.currentCashRegister != null) {
+      // Obtener hora de apertura
+      final openingTime = cashController.currentCashRegister!['openingTime'] ?? 
+                         cashController.currentCashRegister!['createdAt'];
+      
+      if (openingTime != null) {
+        try {
+          final openingDateTime = DateTime.parse(openingTime.toString());
+          
+          // Filtrar movimientos posteriores a apertura
+          recentMovements = cashController.todayMovements
+              .where((movement) {
+                try {
+                  final movementDate = DateTime.parse(
+                    movement['createdAt']?.toString() ?? 
+                    movement['date']?.toString() ?? 
+                    DateTime.now().toIso8601String()
+                  );
+                  return movementDate.isAfter(openingDateTime);
+                } catch (e) {
+                  return false;
+                }
+              })
+              .toList();
+        } catch (e) {
+          // Si hay error parsing, mostrar últimos 5
+          recentMovements = cashController.todayMovements.take(5).toList();
+        }
+      }
+    } else {
+      // Si caja no está abierta, mostrar últimos 5
+      recentMovements = cashController.todayMovements.take(5).toList();
+    }
     
     return Card(
       elevation: 4,
@@ -836,7 +935,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
               ],
               decoration: InputDecoration(
                 labelText: 'Monto inicial',
-                prefixText: '\$ ',
+                prefixText: '\Bs ',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1066,10 +1165,12 @@ class CashRegisterPageState extends State<CashRegisterPage> {
       // Intentar obtener la hora de apertura
       final openingTime = cashRegister['openingTime'] ?? cashRegister['createdAt'];
       if (openingTime != null) {
-        final DateTime dateTime = DateTime.parse(openingTime.toString());
+        // Convertir a DateTime y aplicar zona horaria de Bolivia
+        final DateTime utcDateTime = DateTime.parse(openingTime.toString());
+        final DateTime boliviaTime = TimeUtils.toBoliviaTime(utcDateTime);
         
         // Convertir a formato de 12 horas
-        int hour = dateTime.hour;
+        int hour = boliviaTime.hour;
         String period = hour >= 12 ? 'PM' : 'AM';
         
         // Convertir hora de 24h a 12h
@@ -1079,7 +1180,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
           hour = hour - 12; // Tarde
         }
         
-        return '${hour.toString()}:${dateTime.minute.toString().padLeft(2, '0')} $period';
+        return '${hour.toString()}:${boliviaTime.minute.toString().padLeft(2, '0')} $period';
       }
     } catch (e) {
       if (kDebugMode) {
