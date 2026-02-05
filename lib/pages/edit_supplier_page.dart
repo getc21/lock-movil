@@ -98,14 +98,7 @@ class EditSupplierPageState extends State<EditSupplierPage> {
         
         // Mostrar snackbar después de regresar
         Future.delayed(const Duration(milliseconds: 300), () {
-          Get.snackbar(
-            'Éxito',
-            'Proveedor actualizado correctamente',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green.withValues(alpha: 0.1),
-            colorText: Colors.green[800],
-            duration: const Duration(seconds: 2),
-          );
+          Utils.showSuccessSnackbar('Éxito', 'Proveedor actualizado correctamente');
         });
       }
     } else {

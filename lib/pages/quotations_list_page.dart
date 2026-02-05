@@ -10,7 +10,7 @@ import 'package:bellezapp/services/pdf_service.dart';
 import 'package:bellezapp/utils/utils.dart';
 
 class QuotationsListPage extends StatefulWidget {
-  const QuotationsListPage({Key? key}) : super(key: key);
+  const QuotationsListPage({super.key});
 
   @override
   QuotationsListPageState createState() => QuotationsListPageState();
@@ -250,7 +250,6 @@ class QuotationsListPageState extends State<QuotationsListPage> {
   Widget _buildQuotationCard(Quotation quotation) {
     final statusColor = _getStatusColor(quotation.status);
     final statusLabel = _getStatusLabel(quotation.status);
-    final isConverted = quotation.status == 'converted';
     final isPending = quotation.status == 'pending';
 
     return Card(
@@ -478,20 +477,10 @@ class QuotationsListPageState extends State<QuotationsListPage> {
                   // Si no hay OrderController registrado, no hace nada
                 }
                 
-                Get.snackbar(
-                  'Éxito',
-                  'Cotización convertida a venta exitosamente',
-                  backgroundColor: Colors.green,
-                  colorText: Colors.white,
-                );
+                Utils.showSuccessSnackbar('Éxito', 'Cotización convertida a venta exitosamente');
                 _loadQuotations();
               } catch (e) {
-                Get.snackbar(
-                  'Error',
-                  'Error al convertir cotización: $e',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
+                Utils.showErrorSnackbar('Error', 'Error al convertir cotización: $e');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -520,20 +509,10 @@ class QuotationsListPageState extends State<QuotationsListPage> {
               Navigator.pop(context);
               try {
                 await quotationController.deleteQuotation(quotationId);
-                Get.snackbar(
-                  'Éxito',
-                  'Cotización cancelada',
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
-                );
+                Utils.showWarningSnackbar('Cancelada', 'Cotización cancelada');
                 _loadQuotations();
               } catch (e) {
-                Get.snackbar(
-                  'Error',
-                  'Error al cancelar cotización: $e',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
+                Utils.showErrorSnackbar('Error', 'Error al cancelar cotización: $e');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -548,12 +527,7 @@ class QuotationsListPageState extends State<QuotationsListPage> {
 
   Future<void> _generateQuotationPdf(Quotation quotation) async {
     try {
-      Get.snackbar(
-        'Generando',
-        'Por favor espera...',
-        backgroundColor: Colors.blue,
-        colorText: Colors.white,
-      );
+      Utils.showInfoSnackbar('Generando', 'Por favor espera...');
 
       // Convertir la cotización a un mapa para pasar al servicio PDF
       final quotationMap = {
@@ -575,19 +549,9 @@ class QuotationsListPageState extends State<QuotationsListPage> {
         quotation: quotationMap,
       );
 
-      Get.snackbar(
-        'Éxito',
-        'PDF descargado correctamente',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      Utils.showSuccessSnackbar('Éxito', 'PDF descargado correctamente');
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al generar PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al generar PDF: $e');
     }
   }
 }

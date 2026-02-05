@@ -1,3 +1,4 @@
+import 'package:bellezapp/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/customer_controller.dart';
@@ -438,22 +439,12 @@ class _AddCustomerPageState extends State<AddCustomerPage> {
         }
       } else {
         if (mounted) {
-          Get.snackbar(
-            'Error',
-            'No se pudo ${isEditing ? 'actualizar' : 'registrar'} el cliente',
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
+          Utils.showErrorSnackbar('Error', 'No se pudo ${isEditing ? 'actualizar' : 'registrar'} el cliente');
         }
       }
     } catch (e) {
       if (mounted) {
-        Get.snackbar(
-          'Error',
-          'Ocurrió un error inesperado: $e',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        Utils.showErrorSnackbar('Error', 'Ocurrió un error inesperado: $e');
       }
     } finally {
       _isLoading.value = false;

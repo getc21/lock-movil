@@ -51,25 +51,13 @@ class AddLocationPageState extends State<AddLocationPage> {
     // ⭐ Obtener el storeId actual de la tienda seleccionada
     final currentStore = storeController.currentStore;
     if (currentStore == null) {
-      Get.snackbar(
-        'Error',
-        'No hay tienda seleccionada',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'No hay tienda seleccionada');
       return;
     }
 
     final storeId = currentStore['_id'] ?? currentStore['id'];
     if (storeId == null) {
-      Get.snackbar(
-        'Error',
-        'ID de tienda no válido',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'ID de tienda no válido');
       return;
     }
 
@@ -87,15 +75,8 @@ class AddLocationPageState extends State<AddLocationPage> {
         Navigator.of(context).pop();
         
         // Mostrar snackbar después de regresar
-        Future.delayed(Duration(milliseconds: 300), () {
-          Get.snackbar(
-            'Éxito',
-            'Ubicación creada correctamente',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green.withValues(alpha: 0.1),
-            colorText: Colors.green[800],
-            duration: Duration(seconds: 2),
-          );
+        Future.delayed(const Duration(milliseconds: 300), () {
+          Utils.showSuccessSnackbar('Éxito', 'Ubicación creada correctamente');
         });
       }
     } else {

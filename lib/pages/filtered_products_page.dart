@@ -513,13 +513,7 @@ class _FilteredProductsPageState extends State<FilteredProductsPage> {
       await OpenFilex.open(filePath);
     } catch (e) {
       log('Error generating PDF: $e');
-      Get.snackbar(
-        'Error',
-        'No se pudo generar el PDF',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'No se pudo generar el PDF');
     }
   }
 
@@ -532,13 +526,7 @@ class _FilteredProductsPageState extends State<FilteredProductsPage> {
     if (confirmed) {
       final result = await productController.deleteProduct(productId);
       if (result) {
-        Get.snackbar(
-          'Éxito',
-          'Producto eliminado correctamente',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        Utils.showSuccessSnackbar('Éxito', 'Producto eliminado correctamente');
         _loadFilteredProducts();
       }
     }

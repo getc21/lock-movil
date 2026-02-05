@@ -285,8 +285,7 @@ class _PeriodsComparisonPageState extends State<PeriodsComparisonPage> {
     try {
       final data = reportsController.periodsComparisonData;
       if (data.isEmpty) {
-        Get.snackbar('Información', 'No hay datos para generar PDF',
-          backgroundColor: Colors.orange);
+        Utils.showInfoSnackbar('Información', 'No hay datos para generar PDF');
         return;
       }
       await PdfService.generateComparisonPdf(
@@ -294,11 +293,9 @@ class _PeriodsComparisonPageState extends State<PeriodsComparisonPage> {
         startDate: DateTime.parse(currentStartDate),
         endDate: DateTime.parse(currentEndDate),
       );
-      Get.snackbar('Éxito', 'PDF de comparación generado correctamente',
-        backgroundColor: Colors.green);
+      Utils.showSuccessSnackbar('Éxito', 'PDF de comparación generado correctamente');
     } catch (e) {
-      Get.snackbar('Error', 'Error al generar PDF: $e',
-        backgroundColor: Colors.red);
+      Utils.showErrorSnackbar('Error', 'Error al generar PDF: $e');
     }
   }
 

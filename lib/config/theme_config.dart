@@ -23,19 +23,19 @@ class AppTheme {
 class ThemeConfig {
   // Colores base para los temas
   static const Map<String, Map<String, Color>> themeColors = {
-    'beauty': {
-      'primary': Color(0xFFEC407A),
-      'accent': Color(0xFFF06292),
-      'background': Color(0xFFF8BBD0),
-      'card': Color(0xFFFCE4EC),
-      'surface': Color(0xFFF48FB1),
+    'professional': {
+      'primary': Color(0xFF1565C0),
+      'accent': Color(0xFF424242),
+      'background': Color(0xFFF5F5F5),
+      'card': Color(0xFFFFFFFF),
+      'surface': Color(0xFF42A5F5),
     },
-    'elegant': {
-      'primary': Color(0xFF6A1B9A),
-      'accent': Color(0xFF9C27B0),
-      'background': Color(0xFFE1BEE7),
-      'card': Color(0xFFF3E5F5),
-      'surface': Color(0xFFBA68C8),
+    'slate': {
+      'primary': Color(0xFF455A64),
+      'accent': Color(0xFF37474F),
+      'background': Color(0xFFF5F5F5),
+      'card': Color(0xFFFFFFFF),
+      'surface': Color(0xFF607D8B),
     },
     'ocean': {
       'primary': Color(0xFF0277BD),
@@ -51,19 +51,12 @@ class ThemeConfig {
       'card': Color(0xFFE8F5E8),
       'surface': Color(0xFF81C784),
     },
-    'sunset': {
-      'primary': Color(0xFFFF6F00),
-      'accent': Color(0xFFFF9800),
-      'background': Color(0xFFFFE0B2),
-      'card': Color(0xFFFFF3E0),
-      'surface': Color(0xFFFFB74D),
-    },
-    'royal': {
-      'primary': Color(0xFF283593),
-      'accent': Color(0xFF3F51B5),
-      'background': Color(0xFFC5CAE9),
-      'card': Color(0xFFE8EAF6),
-      'surface': Color(0xFF7986CB),
+    'teal': {
+      'primary': Color(0xFF00897B),
+      'accent': Color(0xFF004D40),
+      'background': Color(0xFFB2DFDB),
+      'card': Color(0xFFE0F2F1),
+      'surface': Color(0xFF26A69A),
     }
   };
 
@@ -230,22 +223,22 @@ class ThemeConfig {
   // Lista de temas disponibles
   static List<AppTheme> get availableThemes => [
     AppTheme(
-      id: 'beauty',
-      name: 'Belleza Rosada',
-      description: 'Tema elegante con tonos rosados, perfecto para tiendas de belleza',
-      lightTheme: createLightTheme('beauty'),
-      darkTheme: createDarkTheme('beauty'),
-      primaryColor: themeColors['beauty']!['primary']!,
-      accentColor: themeColors['beauty']!['accent']!,
+      id: 'professional',
+      name: 'Profesional Azul',
+      description: 'Tema corporativo y profesional con tonos azules, ideal para inventarios',
+      lightTheme: createLightTheme('professional'),
+      darkTheme: createDarkTheme('professional'),
+      primaryColor: themeColors['professional']!['primary']!,
+      accentColor: themeColors['professional']!['accent']!,
     ),
     AppTheme(
-      id: 'elegant',
-      name: 'Elegancia Púrpura',
-      description: 'Tema sofisticado con tonos púrpuras para un look premium',
-      lightTheme: createLightTheme('elegant'),
-      darkTheme: createDarkTheme('elegant'),
-      primaryColor: themeColors['elegant']!['primary']!,
-      accentColor: themeColors['elegant']!['accent']!,
+      id: 'slate',
+      name: 'Slate Minimalista',
+      description: 'Tema gris-azul minimalista y moderno, muy profesional',
+      lightTheme: createLightTheme('slate'),
+      darkTheme: createDarkTheme('slate'),
+      primaryColor: themeColors['slate']!['primary']!,
+      accentColor: themeColors['slate']!['accent']!,
     ),
     AppTheme(
       id: 'ocean',
@@ -266,22 +259,13 @@ class ThemeConfig {
       accentColor: themeColors['nature']!['accent']!,
     ),
     AppTheme(
-      id: 'sunset',
-      name: 'Atardecer Naranja',
-      description: 'Tema cálido y energético con tonos naranjas',
-      lightTheme: createLightTheme('sunset'),
-      darkTheme: createDarkTheme('sunset'),
-      primaryColor: themeColors['sunset']!['primary']!,
-      accentColor: themeColors['sunset']!['accent']!,
-    ),
-    AppTheme(
-      id: 'royal',
-      name: 'Azul Real',
-      description: 'Tema clásico y confiable con azules profundos',
-      lightTheme: createLightTheme('royal'),
-      darkTheme: createDarkTheme('royal'),
-      primaryColor: themeColors['royal']!['primary']!,
-      accentColor: themeColors['royal']!['accent']!,
+      id: 'teal',
+      name: 'Teal Empresarial',
+      description: 'Tema azul-verde profesional con carácter y presencia',
+      lightTheme: createLightTheme('teal'),
+      darkTheme: createDarkTheme('teal'),
+      primaryColor: themeColors['teal']!['primary']!,
+      accentColor: themeColors['teal']!['accent']!,
     ),
   ];
 

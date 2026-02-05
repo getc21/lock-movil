@@ -43,13 +43,7 @@ class _UserStoreAssignmentPageState extends State<UserStoreAssignmentPage> {
         }
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'No se pudieron cargar los usuarios: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'No se pudieron cargar los usuarios: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -581,23 +575,11 @@ class _UserStoreAssignmentPageState extends State<UserStoreAssignmentPage> {
         }
       }
 
-      Get.snackbar(
-        'Éxito',
-        'Asignaciones actualizadas correctamente',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      Utils.showSuccessSnackbar('Éxito', 'Asignaciones actualizadas correctamente');
 
       await _loadData();
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'No se pudieron guardar las asignaciones: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'No se pudieron guardar las asignaciones: $e');
     }
   }
 

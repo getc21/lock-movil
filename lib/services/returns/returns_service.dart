@@ -65,24 +65,13 @@ class ReturnsService {
         'storeId': storeId,
       };
       
-      print('DEBUG ReturnsService: Enviando solicitud de devolución');
-      print('Datos: $requestData');
-      
       final response = await dio.post(
         '$baseUrl/returns/request',
         data: requestData,
       );
 
-      print('DEBUG ReturnsService: Respuesta exitosa');
-      print('Response: ${response.data}');
-      
       return ReturnRequest.fromJson(response.data['returnRequest']);
     } catch (e) {
-      print('DEBUG ReturnsService ERROR: $e');
-      if (e is DioException) {
-        print('DioException response: ${e.response?.data}');
-        print('DioException status: ${e.response?.statusCode}');
-      }
       throw Exception('Error al crear solicitud de devolución: $e');
     }
   }
@@ -108,23 +97,15 @@ class ReturnsService {
         if (refundMethod != null) 'refundMethod': refundMethod,
       };
 
-      print('DEBUG ReturnsService: Obteniendo devoluciones con filtros');
-      print('Query params: $queryParams');
-
       final response = await dio.get(
         '$baseUrl/returns',
         queryParameters: queryParams,
       );
 
-      print('DEBUG ReturnsService: Respuesta exitosa');
-      print('Response data: ${response.data}');
-
       final returnsList = (response.data['returns'] as List?)?.map((r) {
         try {
           return ReturnRequest.fromJson(r as Map<String, dynamic>);
         } catch (e) {
-          print('Error parsing return item: $e');
-          print('Item data: $r');
           rethrow;
         }
       }).toList() ?? [];
@@ -134,8 +115,6 @@ class ReturnsService {
         'summary': response.data['summary'],
       };
     } catch (e) {
-      print('DEBUG ReturnsService ERROR: $e');
-      print('Stack trace: ${StackTrace.current}');
       throw Exception('Error al obtener devoluciones: $e');
     }
   }

@@ -71,14 +71,7 @@ class AddCategoryPageState extends State<AddCategoryPage> {
         
         // Mostrar snackbar después de regresar
         Future.delayed(const Duration(milliseconds: 300), () {
-          Get.snackbar(
-            'Éxito',
-            'Categoría creada correctamente',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green.withValues(alpha: 0.1),
-            colorText: Colors.green[800],
-            duration: const Duration(seconds: 2),
-          );
+          Utils.showSuccessSnackbar('Éxito', 'Categoría creada correctamente');
         });
       }
     } else {

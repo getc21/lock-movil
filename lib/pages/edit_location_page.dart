@@ -59,15 +59,8 @@ class EditLocationPageState extends State<EditLocationPage> {
         Navigator.of(context).pop();
         
         // Mostrar snackbar después de regresar
-        Future.delayed(Duration(milliseconds: 300), () {
-          Get.snackbar(
-            'Éxito',
-            'Ubicación actualizada correctamente',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green.withValues(alpha: 0.1),
-            colorText: Colors.green[800],
-            duration: Duration(seconds: 2),
-          );
+        Future.delayed(const Duration(milliseconds: 300), () {
+          Utils.showSuccessSnackbar('Éxito', 'Ubicación actualizada correctamente');
         });
       }
     } else {
@@ -104,15 +97,8 @@ class EditLocationPageState extends State<EditLocationPage> {
           Navigator.of(context).pop();
           
           // Mostrar snackbar después de regresar
-          Future.delayed(Duration(milliseconds: 300), () {
-            Get.snackbar(
-              'Éxito',
-              'Ubicación eliminada correctamente',
-              snackPosition: SnackPosition.TOP,
-              backgroundColor: Colors.red.withValues(alpha: 0.1),
-              colorText: Colors.red[800],
-              duration: Duration(seconds: 2),
-            );
+          Future.delayed(const Duration(milliseconds: 300), () {
+            Utils.showSuccessSnackbar('Eliminada', 'Ubicación eliminada correctamente');
           });
         }
       } else {

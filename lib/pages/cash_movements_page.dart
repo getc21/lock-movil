@@ -17,7 +17,6 @@ class CashMovementsPage extends StatefulWidget {
 // Constantes de estilos para consistencia
 const double _defaultPadding = 16.0;
 const double _defaultBorderRadius = 12.0;
-const double _cardElevation = 2.0;
 
 final Map<String, Color> _movementTypeColors = {
   'income': Colors.green,
@@ -546,23 +545,13 @@ class CashMovementsPageState extends State<CashMovementsPage> {
 
   Future<void> _addMovement(String type) async {
     if (_amountController.text.isEmpty || _descriptionController.text.isEmpty) {
-      Get.snackbar(
-        'Error',
-        'Por favor complete todos los campos',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Por favor complete todos los campos');
       return;
     }
 
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) {
-      Get.snackbar(
-        'Error',
-        'Ingrese un monto válido',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Ingrese un monto válido');
       return;
     }
 
@@ -580,19 +569,9 @@ class CashMovementsPageState extends State<CashMovementsPage> {
       
       await _loadMovements();
       
-      Get.snackbar(
-        'Éxito',
-        'Movimiento agregado correctamente',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      Utils.showSuccessSnackbar('Éxito', 'Movimiento agregado correctamente');
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al agregar movimiento: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al agregar movimiento: $e');
     }
   }
 }

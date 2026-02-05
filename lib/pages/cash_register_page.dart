@@ -1049,7 +1049,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                 Get.back();
                 cashController.openCashRegisterSimple(amount);
               } else {
-                Get.snackbar('Error', 'Ingrese un monto v�lido');
+                Utils.showErrorSnackbar('Error', 'Ingrese un monto válido');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1067,7 +1067,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
   void _showCloseCashDialog() {
     // Verificar que haya una caja abierta
     if (!cashController.isCashRegisterOpen) {
-      Get.snackbar('Error', 'No hay caja abierta para cerrar.');
+      Utils.showErrorSnackbar('Error', 'No hay caja abierta para cerrar.');
       return;
     }
     
@@ -1116,7 +1116,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                 Get.back();
                 _closeCashWithReport(amount);
               } else {
-                Get.snackbar('Error', 'Ingrese un monto v�lido');
+                Utils.showErrorSnackbar('Error', 'Ingrese un monto válido');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1137,7 +1137,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     
     // Verificar que haya una caja abierta
     if (!cashController.isCashRegisterOpen) {
-      Get.snackbar('Error', 'No hay caja abierta. Abra una caja primero.');
+      Utils.showErrorSnackbar('Error', 'No hay caja abierta. Abra una caja primero.');
       return;
     }
     
@@ -1199,7 +1199,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
                 _incomeAmountController.clear();
                 _incomeDescriptionController.clear();
               } else {
-                Get.snackbar('Error', 'Complete todos los campos correctamente');
+                Utils.showErrorSnackbar('Error', 'Complete todos los campos correctamente');
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1221,7 +1221,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     try {
       // Verificar que haya una caja abierta
       if (!cashController.isCashRegisterOpen) {
-        Get.snackbar('Error', 'No hay caja abierta. Abra una caja primero.');
+        Utils.showErrorSnackbar('Error', 'No hay caja abierta. Abra una caja primero.');
         return;
       }
       
@@ -1246,7 +1246,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
       );
     } catch (e) {
       _markDialogClosed();
-      Get.snackbar('Error', 'Error al abrir el di�logo. Intente nuevamente.');
+      Utils.showErrorSnackbar('Error', 'Error al abrir el diálogo. Intente nuevamente.');
     }
   }
 
@@ -1311,12 +1311,7 @@ class CashRegisterPageState extends State<CashRegisterPage> {
     try {
       // Verificar que la caja exista antes de acceder
       if (cashController.currentCashRegister == null) {
-        Get.snackbar(
-          'Error',
-          'No hay caja abierta para generar el reporte',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        Utils.showErrorSnackbar('Error', 'No hay caja abierta para generar el reporte');
         return;
       }
 
@@ -1420,23 +1415,13 @@ class CashRegisterPageState extends State<CashRegisterPage> {
       );
 
       // Mostrar mensaje de éxito
-      Get.snackbar(
-        'Reporte Generado',
-        'PDF de cierre de caja generado exitosamente',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      Utils.showSuccessSnackbar('Reporte Generado', 'PDF de cierre de caja generado exitosamente');
 
       // Cerrar la caja
       await Future.delayed(const Duration(milliseconds: 500));
       cashController.closeCashRegisterSimple(actualAmount);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al generar el reporte: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al generar el reporte: $e');
     }
   }
 

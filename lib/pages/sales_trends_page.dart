@@ -216,8 +216,7 @@ class _SalesTrendsPageState extends State<SalesTrendsPage> {
     try {
       final data = reportsController.salesTrendsData;
       if (data.isEmpty) {
-        Get.snackbar('Información', 'No hay datos para generar PDF',
-          backgroundColor: Colors.orange);
+        Utils.showInfoSnackbar('Información', 'No hay datos para generar PDF');
         return;
       }
       await PdfService.generateSalesTrendsPdf(
@@ -226,11 +225,9 @@ class _SalesTrendsPageState extends State<SalesTrendsPage> {
         endDate: DateTime.parse(endDate),
         period: period,
       );
-      Get.snackbar('Éxito', 'PDF de tendencias generado correctamente',
-        backgroundColor: Colors.green);
+      Utils.showSuccessSnackbar('Éxito', 'PDF de tendencias generado correctamente');
     } catch (e) {
-      Get.snackbar('Error', 'Error al generar PDF: $e',
-        backgroundColor: Colors.red);
+      Utils.showErrorSnackbar('Error', 'Error al generar PDF: $e');
     }
   }
 

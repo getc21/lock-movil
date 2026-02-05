@@ -594,13 +594,7 @@ class StoreManagementPage extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () async {
                           if (nameController.text.isEmpty) {
-                            Get.snackbar(
-                              'Error',
-                              'El nombre de la tienda es obligatorio',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: Colors.red,
-                              colorText: Colors.white,
-                            );
+                            Utils.showErrorSnackbar('Error', 'El nombre de la tienda es obligatorio');
                             return;
                           }
 

@@ -40,9 +40,6 @@ class ProductListPageState extends State<ProductListPage> {
     // Inicializar notificaciones
     _initializeNotifications();
 
-    // ⭐ PEDIR PERMISOS DE NOTIFICACIÓN EN ANDROID 13+
-    _requestNotificationPermissions();
-
     // Intentar obtener una instancia existente, o crear una nueva si no existe
     try {
       productController = Get.find<ProductController>();
@@ -62,24 +59,6 @@ class ProductListPageState extends State<ProductListPage> {
   void _loadProducts() {
     // ⭐ SIEMPRE cargar productos de la tienda actual
     productController.loadProductsForCurrentStore();
-  }
-
-  /// ⭐ Pedir permisos de notificación en Android 13+ (API 33+)
-  Future<void> _requestNotificationPermissions() async {
-    if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          flutterLocalNotificationsPlugin
-              .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin
-              >();
-
-      final bool? grantedNotificationPermission = await androidImplementation
-          ?.requestNotificationsPermission();
-
-      log(
-        '[NOTIF] Permiso de notificación otorgado: $grantedNotificationPermission',
-      );
-    }
   }
 
   List<Map<String, dynamic>> get _filteredProducts {
@@ -321,24 +300,20 @@ class ProductListPageState extends State<ProductListPage> {
                           keyboardType: TextInputType.numberWithOptions(decimal: true),
                           cursorColor: Utils.colorBotones,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 30,
                             fontWeight: FontWeight.w600,
                             color: Utils.colorBotones,
                           ),
                           decoration: InputDecoration(
                             prefixIcon: Padding(
                               padding: EdgeInsets.only(left: 16),
-                              child: Icon(
-                                Icons.attach_money,
-                                color: Colors.orange,
-                                size: 24,
+                              child: Text('Bs. ',
+                                style: TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            prefixText: 'Bs. ',
-                            prefixStyle: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
                             hintText: 'Precio unitario',
                             hintStyle: TextStyle(
@@ -462,18 +437,7 @@ class ProductListPageState extends State<ProductListPage> {
                                     if (success) {
                                       _loadProducts();
                                       // Mostrar snackbar de éxito
-                                      Get.snackbar(
-                                        'Stock Actualizado',
-                                        'Se agregaron $stockToAdd unidades correctamente',
-                                        snackPosition: SnackPosition.TOP,
-                                        backgroundColor: Colors.green,
-                                        colorText: Colors.white,
-                                        icon: Icon(
-                                          Icons.check_circle,
-                                          color: Colors.white,
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      );
+                                      Utils.showSuccessSnackbar('Stock Actualizado', 'Se agregaron $stockToAdd unidades correctamente');
                                     }
                                   }
                                 },
@@ -555,13 +519,7 @@ class ProductListPageState extends State<ProductListPage> {
       );
     } catch (e) {
       log('Error generating QR: $e');
-      Get.snackbar(
-        'Error',
-        'No se pudo generar el código QR',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'No se pudo generar el código QR');
     }
   }
 
@@ -579,7 +537,7 @@ class ProductListPageState extends State<ProductListPage> {
           log('❌ [QR] Permisos denegados');
           Get.snackbar(
             'Permisos Requeridos',
-            'Se necesitan permisos de almacenamiento para guardar el QR.\nVe a Configuración > Permisos > Almacenamiento',
+            'Se necesitan permisos de almacenamiento para guardar el QR.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.orange,
             colorText: Colors.white,
@@ -596,22 +554,15 @@ class ProductListPageState extends State<ProductListPage> {
         log('✅ [QR] Permisos otorgados');
       }
 
-      log('🟡 [QR] Obteniendo RenderRepaintBoundary...');
+      log('🟡 [QR] Renderizando imagen...');
       // Obtener el RenderRepaintBoundary
       final boundary =
           key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
-        Get.snackbar(
-          'Error',
-          'No se pudo obtener la imagen del QR',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        Utils.showErrorSnackbar('Error', 'No se pudo obtener la imagen del QR');
         return;
       }
 
-      log('🟡 [QR] Renderizando imagen...');
       // Renderizar la imagen
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -620,84 +571,96 @@ class ProductListPageState extends State<ProductListPage> {
         throw Exception('No se pudo convertir a bytes');
       }
 
-      log('🟡 [QR] Obteniendo directorio de descargas...');
-      // Obtener directorio de Descargas
-      Directory? downloadDir;
+      log('🟡 [QR] Obteniendo directorio de Pictures...');
+      // Obtener directorio Pictures (que se sincroniza con galería)
+      final appDocDir = await getApplicationDocumentsDirectory();
+      final picturesDir = Directory('${appDocDir.path}/../Pictures/QR_Codes');
       
-      if (Platform.isAndroid) {
-        try {
-          // Usar getDownloadsDirectory() para obtener el directorio de descargas
-          downloadDir = await getDownloadsDirectory();
-          if (downloadDir == null) {
-            // Fallback a app-specific directory
-            final appDocDir = await getApplicationDocumentsDirectory();
-            downloadDir = Directory('${appDocDir.path}/QR_Codes');
-          }
-        } catch (e) {
-          // Fallback: usar app-specific directory
-          final appDocDir = await getApplicationDocumentsDirectory();
-          downloadDir = Directory('${appDocDir.path}/QR_Codes');
-        }
-      } else {
-        // iOS
-        final appDocDir = await getApplicationDocumentsDirectory();
-        downloadDir = Directory('${appDocDir.path}/QR_Codes');
+      if (!await picturesDir.exists()) {
+        await picturesDir.create(recursive: true);
       }
 
-      // Crear carpeta si no existe
-      if (!await downloadDir.exists()) {
-        await downloadDir.create(recursive: true);
-      }
-
-      // Crear nombre de archivo con timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName =
           '${productName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_$timestamp.png';
-      final filePath = '${downloadDir.path}/$fileName';
+      final filePath = '${picturesDir.path}/$fileName';
 
+      log('🟡 [QR] Guardando en: $filePath');
       // Guardar archivo
       final file = File(filePath);
-      String finalPath = filePath;
-      try {
-        await file.writeAsBytes(byteData.buffer.asUint8List());
-      } on FileSystemException {
-        // Fallback a app-specific directory si falla el acceso directo
-        final appDocDir = await getApplicationDocumentsDirectory();
-        final fallbackDir = Directory('${appDocDir.path}/QR_Codes');
-        await fallbackDir.create(recursive: true);
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+
+      if (await file.exists()) {
+        log('✅ [QR] Guardado exitosamente');
         
-        final fallbackPath = '${fallbackDir.path}/$fileName';
-        final fallbackFile = File(fallbackPath);
-        await fallbackFile.writeAsBytes(byteData.buffer.asUint8List());
-        finalPath = fallbackPath;
+        // Mostrar notificación
+        await _showQRNotification(fileName, filePath);
+        
+        // Mostrar snackbar
+        Utils.showSuccessSnackbar('✅ Éxito', 'QR guardado en Galería');
       }
+    } catch (e) {
+      log('❌ [QR] Error al guardar: $e');
+      Utils.showErrorSnackbar('Error', 'No se pudo guardar el QR: $e');
+    }
+  }
 
-      // Mostrar notificación de Android con la ruta completa
-      await _showQRNotification(fileName, finalPath);
+  Future<void> _showQRNotification(String fileName, String filePath) async {
+    try {
+      log('[NOTIF] Mostrando notificación para: $fileName');
 
-      // Mostrar mensaje de éxito
-      Get.snackbar(
-        '✅ Éxito',
-        'QR guardado en ${Platform.isAndroid ? 'Descargas' : 'Documentos'}\n$fileName',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'qr_downloads',
+            'Descargas de QR',
+            channelDescription: 'Notificaciones cuando se guarda un QR',
+            importance: Importance.high,
+            priority: Priority.high,
+            enableLights: true,
+            enableVibration: true,
+            playSound: true,
+            autoCancel: true,
+          );
+
+      const NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+      );
+
+      await flutterLocalNotificationsPlugin.show(
+        id: DateTime.now().millisecond,
+        title: '📥 QR Descargado',
+        body: 'Toca para ver la imagen',
+        notificationDetails: notificationDetails,
+        payload: filePath,
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'No se pudo guardar el QR: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      log('[NOTIF] ❌ Error mostrando notificación: $e');
+    }
+  }
+
+  void _handleNotificationTap(NotificationResponse response) async {
+    try {
+      final filePath = response.payload;
+      if (filePath == null || filePath.isEmpty) {
+        return;
+      }
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        Utils.showErrorSnackbar('Error', 'El archivo QR fue eliminado');
+        return;
+      }
+
+      // Abrir con galería/visor de imágenes
+      await OpenFilex.open(filePath);
+    } catch (e) {
+      log('[NOTIF] ❌ Error abriendo archivo: $e');
+      Utils.showErrorSnackbar('Error', 'Error al abrir el archivo: $e');
     }
   }
 
   Future<void> _initializeNotifications() async {
     try {
-
       flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
       const AndroidInitializationSettings androidInitSettings =
@@ -708,12 +671,11 @@ class ProductListPageState extends State<ProductListPage> {
       );
 
       await flutterLocalNotificationsPlugin.initialize(
-        initSettings,
-        // ⭐ AGREGAR HANDLER PARA CUANDO EL USUARIO TOCA LA NOTIFICACIÓN
+        settings: initSettings,
         onDidReceiveNotificationResponse: _handleNotificationTap,
       );
 
-      // ⭐ Crear canal para Android 8.0+ (IMPORTANTE para Android 13+)
+      // Crear canal
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'qr_downloads',
         'Descargas de QR',
@@ -731,73 +693,9 @@ class ProductListPageState extends State<ProductListPage> {
 
       if (android != null) {
         await android.createNotificationChannel(channel);
-      } else {
       }
-
-    } catch (e, stack) {
-      log('[NOTIF] ❌ Error inicializando notificaciones: $e');
-      log('[NOTIF] Stack trace: $stack');
-    }
-  }
-
-  Future<void> _showQRNotification(String fileName, String filePath) async {
-    try {
-      log('[NOTIF] Intentando mostrar notificación para: $fileName');
-
-      // ⭐ Usar AndroidNotificationChannel (requerido para Android 8.0+)
-      const AndroidNotificationDetails androidDetails =
-          AndroidNotificationDetails(
-            'qr_downloads', // Mismo ID del canal creado
-            'Descargas de QR',
-            channelDescription: 'Notificaciones cuando se guarda un QR',
-            importance: Importance.high,
-            priority: Priority.high,
-            showWhen: true,
-            enableLights: true,
-            enableVibration: true,
-            playSound: true,
-            autoCancel: true,
-          );
-
-      const NotificationDetails notificationDetails = NotificationDetails(
-        android: androidDetails,
-      );
-
-      await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecond,
-        '📥 QR Descargado',
-        'Archivo: $fileName',
-        notificationDetails,
-        payload: filePath, // Pasar la ruta completa como payload
-      );
-    } catch (e, stack) {
-      log('[NOTIF] ❌ Error mostrando notificación: $e');
-      log('[NOTIF] Stack trace: $stack');
-    }
-  }
-
-  // ⭐ NUEVO: Handler para cuando el usuario toca la notificación
-  void _handleNotificationTap(NotificationResponse response) async {
-    try {
-
-      final filePath = response.payload;
-      if (filePath == null || filePath.isEmpty) {
-        return;
-      }
-
-      // Verificar que el archivo existe
-      final file = File(filePath);
-      if (!await file.exists()) {
-        Get.snackbar('Error', 'El archivo QR no existe (puede haber sido eliminado)');
-        return;
-      }
-
-      // ⭐ Abrir el archivo con la app de galería/visualizador de imágenes
-      await OpenFilex.open(filePath);
-    } catch (e, stack) {
-      log('[NOTIF] ❌ Error manejando notificación: $e');
-      log('[NOTIF] Stack trace: $stack');
-      Get.snackbar('Error', 'Error al abrir el archivo: $e');
+    } catch (e) {
+      log('[NOTIF] ❌ Error inicializando: $e');
     }
   }
 
@@ -810,13 +708,7 @@ class ProductListPageState extends State<ProductListPage> {
     if (confirmed) {
       final result = await productController.deleteProduct(productId);
       if (result) {
-        Get.snackbar(
-          'Éxito',
-          'Producto eliminado correctamente',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        Utils.showSuccessSnackbar('Éxito', 'Producto eliminado correctamente');
         _loadProducts();
       }
     }

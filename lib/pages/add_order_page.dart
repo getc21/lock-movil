@@ -212,12 +212,7 @@ class AddOrderPageState extends State<AddOrderPage> {
   void _registerOrder() async {
     if (_products.isEmpty) {
       // Mostrar un mensaje de advertencia si no hay productos en la lista
-      Get.snackbar(
-        'Advertencia',
-        'No se puede registrar una orden sin productos.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showWarningSnackbar('Advertencia', 'No se puede registrar una orden sin productos.');
       return;
     }
 
@@ -508,13 +503,7 @@ class AddOrderPageState extends State<AddOrderPage> {
         Navigator.of(context).pop(true);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al procesar la venta: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al procesar la venta: $e');
     }
   }
 
@@ -907,14 +896,7 @@ class AddOrderPageState extends State<AddOrderPage> {
                                     // Limpiar cooldown para permitir reescanear
                                     _clearScanCooldown();
                                   });
-                                  Get.snackbar(
-                                    'Producto eliminado',
-                                    'Se ha quitado del carrito',
-                                    snackPosition: SnackPosition.BOTTOM,
-                                    backgroundColor: Colors.orange,
-                                    colorText: Colors.white,
-                                    duration: Duration(seconds: 2),
-                                  );
+                                  Utils.showWarningSnackbar('Producto eliminado', 'Se ha quitado del carrito');
                                 },
                                 child: ListTile(
                                   contentPadding: EdgeInsets.symmetric(
@@ -932,14 +914,7 @@ class AddOrderPageState extends State<AddOrderPage> {
                                         // Limpiar cooldown para permitir reescanear
                                         _clearScanCooldown();
                                       });
-                                      Get.snackbar(
-                                        'Producto eliminado',
-                                        'Se ha quitado del carrito',
-                                        snackPosition: SnackPosition.BOTTOM,
-                                        backgroundColor: Colors.orange,
-                                        colorText: Colors.white,
-                                        duration: Duration(seconds: 2),
-                                      );
+                                      Utils.showWarningSnackbar('Producto eliminado', 'Se ha quitado del carrito');
                                     },
                                   ),
                                   title: Text(
@@ -1219,13 +1194,7 @@ class AddOrderPageState extends State<AddOrderPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al generar cotización: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al generar cotización: $e');
     }
   }
 }

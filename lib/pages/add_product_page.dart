@@ -119,11 +119,7 @@ class AddProductPageState extends State<AddProductPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isEmpty) {
-                Get.snackbar(
-                  'Error',
-                  'El nombre es requerido',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showErrorSnackbar('Error', 'El nombre es requerido');
                 return;
               }
 
@@ -138,11 +134,7 @@ class AddProductPageState extends State<AddProductPage> {
                 if (context.mounted) {
                   Navigator.pop(context, true);
                 }
-                Get.snackbar(
-                  'Éxito',
-                  'Categoría creada correctamente',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showSuccessSnackbar('Éxito', 'Categoría creada correctamente');
               }
             },
             child: const Text('Crear'),
@@ -229,11 +221,7 @@ class AddProductPageState extends State<AddProductPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isEmpty) {
-                Get.snackbar(
-                  'Error',
-                  'El nombre es requerido',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showErrorSnackbar('Error', 'El nombre es requerido');
                 return;
               }
 
@@ -250,11 +238,7 @@ class AddProductPageState extends State<AddProductPage> {
                 if (context.mounted) {
                   Navigator.pop(context, true);
                 }
-                Get.snackbar(
-                  'Éxito',
-                  'Proveedor creado correctamente',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showSuccessSnackbar('Éxito', 'Proveedor creado correctamente');
               }
             },
             child: const Text('Crear'),
@@ -321,11 +305,7 @@ class AddProductPageState extends State<AddProductPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isEmpty) {
-                Get.snackbar(
-                  'Error',
-                  'El nombre es requerido',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showErrorSnackbar('Error', 'El nombre es requerido');
                 return;
               }
 
@@ -334,11 +314,7 @@ class AddProductPageState extends State<AddProductPage> {
               final storeId = storeController.currentStore?['_id'];
 
               if (storeId == null) {
-                Get.snackbar(
-                  'Error',
-                  'No hay tienda seleccionada',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showErrorSnackbar('Error', 'No hay tienda seleccionada');
                 return;
               }
 
@@ -352,11 +328,7 @@ class AddProductPageState extends State<AddProductPage> {
                 if (context.mounted) {
                   Navigator.pop(context, true);
                 }
-                Get.snackbar(
-                  'Éxito',
-                  'Ubicación creada correctamente',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                Utils.showSuccessSnackbar('Éxito', 'Ubicación creada correctamente');
               }
             },
             child: const Text('Crear'),
@@ -449,44 +421,29 @@ class AddProductPageState extends State<AddProductPage> {
     }
 
     if (_selectedCategoryId == null) {
-      Get.snackbar('Error', 'Selecciona una categoría',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white);
+      Utils.showErrorSnackbar('Error', 'Selecciona una categoría');
       return;
     }
 
     if (_selectedSupplierId == null) {
-      Get.snackbar('Error', 'Selecciona un proveedor',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white);
+      Utils.showErrorSnackbar('Error', 'Selecciona un proveedor');
       return;
     }
 
     if (_selectedLocationId == null) {
-      Get.snackbar('Error', 'Selecciona una ubicación',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white);
+      Utils.showErrorSnackbar('Error', 'Selecciona una ubicación');
       return;
     }
 
     if (_selectedDate == null) {
-      Get.snackbar('Error', 'Selecciona una fecha de vencimiento',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white);
+      Utils.showErrorSnackbar('Error', 'Selecciona una fecha de vencimiento');
       return;
     }
 
     // Obtener storeId de la tienda actual
     final storeId = storeController.currentStore?['_id'];
     if (storeId == null) {
-      Get.snackbar('Error', 'No hay tienda seleccionada',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white);
+      Utils.showErrorSnackbar('Error', 'No hay tienda seleccionada');
       return;
     }
 

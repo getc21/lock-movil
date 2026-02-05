@@ -53,7 +53,13 @@ class CategoryListPageState extends State<CategoryListPage> {
     );
 
     if (confirmed) {
-      await categoryController.deleteCategory(id);
+      final success = await categoryController.deleteCategory(id);
+      if (success) {
+        Utils.showSuccessSnackbar('Eliminada', 'Categoría eliminada correctamente');
+        categoryController.loadCategories();
+      } else {
+        Utils.showErrorSnackbar('Error', 'No se pudo eliminar la categoría');
+      }
     }
   }
 
@@ -219,7 +225,8 @@ class CategoryListPageState extends State<CategoryListPage> {
         backgroundColor: Utils.colorBotones,
         onPressed: () async {
           final result = await Get.to(() => const AddCategoryPage());
-          if (result == true || result == null) {
+          if (result == true) {
+            Utils.showSuccessSnackbar('Éxito', 'Categoría creada correctamente');
             categoryController.loadCategories();
           }
         },
@@ -403,7 +410,8 @@ class CategoryListPageState extends State<CategoryListPage> {
                             final result = await Get.to(
                               () => EditCategoryPage(category: category),
                             );
-                            if (result == true || result == null) {
+                            if (result == true) {
+                              Utils.showSuccessSnackbar('Éxito', 'Categoría actualizada correctamente');
                               categoryController.loadCategories();
                             }
                           },

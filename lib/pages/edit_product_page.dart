@@ -198,22 +198,22 @@ class EditProductPageState extends State<EditProductPage> {
     }
 
     if (_selectedCategoryId == null) {
-      Get.snackbar('Error', 'Selecciona una categoría');
+      Utils.showErrorSnackbar('Error', 'Selecciona una categoría');
       return;
     }
 
     if (_selectedSupplierId == null) {
-      Get.snackbar('Error', 'Selecciona un proveedor');
+      Utils.showErrorSnackbar('Error', 'Selecciona un proveedor');
       return;
     }
 
     if (_selectedLocationId == null) {
-      Get.snackbar('Error', 'Selecciona una ubicación');
+      Utils.showErrorSnackbar('Error', 'Selecciona una ubicación');
       return;
     }
 
     if (_selectedExpiryDate == null) {
-      Get.snackbar('Error', 'Selecciona una fecha de vencimiento');
+      Utils.showErrorSnackbar('Error', 'Selecciona una fecha de vencimiento');
       return;
     }
 

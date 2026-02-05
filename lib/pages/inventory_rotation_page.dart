@@ -215,8 +215,7 @@ class _InventoryRotationPageState extends State<InventoryRotationPage> {
     try {
       final data = reportsController.inventoryRotationData;
       if (data.isEmpty) {
-        Get.snackbar('Información', 'No hay datos para generar PDF',
-          backgroundColor: Colors.orange);
+        Utils.showInfoSnackbar('Información', 'No hay datos para generar PDF');
         return;
       }
       await PdfService.generateInventoryRotationPdf(
@@ -224,11 +223,9 @@ class _InventoryRotationPageState extends State<InventoryRotationPage> {
         startDate: DateTime.parse(startDate),
         endDate: DateTime.parse(endDate),
       );
-      Get.snackbar('Éxito', 'PDF de rotación generado correctamente',
-        backgroundColor: Colors.green);
+      Utils.showSuccessSnackbar('Éxito', 'PDF de rotación generado correctamente');
     } catch (e) {
-      Get.snackbar('Error', 'Error al generar PDF: $e',
-        backgroundColor: Colors.red);
+      Utils.showErrorSnackbar('Error', 'Error al generar PDF: $e');
     }
   }
 

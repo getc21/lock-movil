@@ -4,57 +4,44 @@ import 'package:flutter/foundation.dart';
 
 class PermissionsService {
   /// Solicitar permisos de almacenamiento (compatible con Android 6+)
+  /// Para Android 13+: solo pide READ_MEDIA_IMAGES si es necesario
+  /// Para Android < 13: pide WRITE_EXTERNAL_STORAGE una sola vez
   static Future<bool> requestStoragePermissions() async {
     if (!Platform.isAndroid) return true;
 
     try {
-      // Android 11+ (API 30+): No necesita WRITE_EXTERNAL_STORAGE
-      // Android 9-10: Necesita WRITE_EXTERNAL_STORAGE
-      // Android 6-8: Necesita ambos
-      
-      ph.PermissionStatus status;
-      
       if (kDebugMode) {
         print('🔵 [PERMISOS] Solicitando permisos de almacenamiento...');
       }
 
-      // Para Android 13+ (API 33+): usar READ_MEDIA_IMAGES
-      if (await ph.Permission.manageExternalStorage.isDenied) {
-        status = await ph.Permission.manageExternalStorage.request();
-        if (kDebugMode) {
-          print('🟡 [PERMISOS] manageExternalStorage: $status');
-        }
-      }
+      ph.PermissionStatus status;
 
-      // Solicitar WRITE_EXTERNAL_STORAGE para Android < 13
-      if (await ph.Permission.storage.isDenied) {
-        status = await ph.Permission.storage.request();
-        if (kDebugMode) {
-          print('🟡 [PERMISOS] storage (WRITE): $status');
-        }
-      }
-
-      // Solicitar READ_EXTERNAL_STORAGE
+      // Android 13+ (API 33+): Usar READ_MEDIA_IMAGES (más seguro)
       if (await ph.Permission.photos.isDenied) {
         status = await ph.Permission.photos.request();
         if (kDebugMode) {
-          print('🟡 [PERMISOS] photos (READ): $status');
+          print('🟡 [PERMISOS] READ_MEDIA_IMAGES: $status');
         }
       }
 
-      // Verificar si los permisos fueron otorgados
-      final storageGranted = await ph.Permission.storage.isGranted;
-      final manageGranted = await ph.Permission.manageExternalStorage.isGranted;
-      final photosGranted = await ph.Permission.photos.isGranted;
+      // Android 12 y anteriores: Usar WRITE_EXTERNAL_STORAGE
+      if (await ph.Permission.storage.isDenied) {
+        status = await ph.Permission.storage.request();
+        if (kDebugMode) {
+          print('🟡 [PERMISOS] WRITE_EXTERNAL_STORAGE: $status');
+        }
+      }
 
-      final hasPermission = storageGranted || manageGranted || photosGranted;
+      // Verificar si tenemos al menos uno de los permisos
+      final photosGranted = await ph.Permission.photos.isGranted;
+      final storageGranted = await ph.Permission.storage.isGranted;
+      final hasPermission = photosGranted || storageGranted;
 
       if (kDebugMode) {
-        print('✅ [PERMISOS] Permisos otorgados:');
-        print('   - Storage: $storageGranted');
-        print('   - Manage: $manageGranted');
-        print('   - Photos: $photosGranted');
-        print('   - Resultado final: $hasPermission');
+        print('✅ [PERMISOS] Estado final:');
+        print('   - READ_MEDIA_IMAGES: $photosGranted');
+        print('   - WRITE_EXTERNAL_STORAGE: $storageGranted');
+        print('   - Permitido: $hasPermission');
       }
 
       return hasPermission;
@@ -71,11 +58,17 @@ class PermissionsService {
     if (!Platform.isAndroid) return true;
 
     try {
-      final storageGranted = await ph.Permission.storage.isGranted;
-      final manageGranted = await ph.Permission.manageExternalStorage.isGranted;
+      // Verificar si tenemos al menos uno de los permisos necesarios
       final photosGranted = await ph.Permission.photos.isGranted;
+      final storageGranted = await ph.Permission.storage.isGranted;
 
-      return storageGranted || manageGranted || photosGranted;
+      if (kDebugMode) {
+        print('🔍 [PERMISOS] Verificando permisos existentes:');
+        print('   - READ_MEDIA_IMAGES: $photosGranted');
+        print('   - WRITE_EXTERNAL_STORAGE: $storageGranted');
+      }
+
+      return photosGranted || storageGranted;
     } catch (e) {
       if (kDebugMode) {
         print('❌ [PERMISOS] Error verificando permisos: $e');

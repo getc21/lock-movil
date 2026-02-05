@@ -178,27 +178,27 @@ class ReturnRequest {
 
   factory ReturnRequest.fromJson(Map<String, dynamic> json) {
     // Helper para extraer ID de campos que pueden ser String o Map
-    String? _extractId(dynamic value) {
+    String? extractId(dynamic value) {
       if (value is String) return value;
-      if (value is Map) return (value as Map)['_id']?.toString();
+      if (value is Map) return value['_id']?.toString();
       return null;
     }
 
     // Helper para extraer nombre de campos que pueden ser String o Map
-    String? _extractName(dynamic value) {
+    String? extractName(dynamic value) {
       if (value is String) return value;
-      if (value is Map) return (value as Map)['name']?.toString();
+      if (value is Map) return value['name']?.toString();
       return null;
     }
 
     // Extraer customerName de múltiples fuentes posibles
-    String? customerNameValue = _extractName(json['customerName']) ?? 
-                                _extractName(json['customerId']) ??
+    String? customerNameValue = extractName(json['customerName']) ?? 
+                                extractName(json['customerId']) ??
                                 json['customer']?['name']?.toString();
 
     return ReturnRequest(
       id: json['_id'] as String?,
-      orderId: _extractId(json['orderId']) ?? '',
+      orderId: extractId(json['orderId']) ?? '',
       orderNumber: json['orderNumber'] as String?,
       type: ReturnType.fromValue(json['type'] as String? ?? 'return'),
       status: ReturnStatus.fromValue(json['status'] as String? ?? 'pending'),
@@ -207,19 +207,19 @@ class ReturnRequest {
           .toList() ?? [],
       totalRefundAmount: (json['totalRefundAmount'] as num?)?.toDouble() ?? 0.0,
       refundMethod: RefundMethod.fromValue(json['refundMethod'] as String? ?? 'efectivo'),
-      customerId: _extractId(json['customerId']),
+      customerId: extractId(json['customerId']),
       customerName: customerNameValue,
-      storeId: _extractId(json['storeId']) ?? '',
+      storeId: extractId(json['storeId']) ?? '',
       returnReasonCategory:
           ReturnReasonCategory.fromValue(json['returnReasonCategory'] as String? ?? 'other'),
       returnReasonDetails: json['returnReasonDetails'] as String?,
-      requestedBy: _extractId(json['requestedBy']),
+      requestedBy: extractId(json['requestedBy']),
       requestedAt:
           json['requestedAt'] != null ? DateTime.parse(json['requestedAt'] as String) : null,
-      approvedBy: _extractId(json['approvedBy']),
+      approvedBy: extractId(json['approvedBy']),
       approvedAt:
           json['approvedAt'] != null ? DateTime.parse(json['approvedAt'] as String) : null,
-      processedBy: _extractId(json['processedBy']),
+      processedBy: extractId(json['processedBy']),
       processedAt:
           json['processedAt'] != null ? DateTime.parse(json['processedAt'] as String) : null,
       attachmentUrls: List<String>.from(json['attachmentUrls'] as List? ?? []),

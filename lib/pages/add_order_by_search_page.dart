@@ -14,7 +14,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 class AddOrderBySearchPage extends StatefulWidget {
-  const AddOrderBySearchPage({Key? key}) : super(key: key);
+  const AddOrderBySearchPage({super.key});
 
   @override
   AddOrderBySearchPageState createState() => AddOrderBySearchPageState();
@@ -736,18 +736,8 @@ class AddOrderBySearchPageState extends State<AddOrderBySearchPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al crear orden: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al crear orden: $e');
     }
-  }
-
-  void _showOrderSuccessDialog() {
-    // Método eliminado - se usa el flujo de diálogos de AddOrderPage
   }
 
   Future<void> _generateQuotation() async {
@@ -757,7 +747,7 @@ class AddOrderBySearchPageState extends State<AddOrderBySearchPage> {
     final storeId = storeController.currentStore?['_id'];
 
     if (storeId == null) {
-      Get.snackbar('Error', 'No hay tienda seleccionada');
+      Utils.showErrorSnackbar('Error', 'No hay tienda seleccionada');
       return;
     }
 
@@ -910,13 +900,7 @@ class AddOrderBySearchPageState extends State<AddOrderBySearchPage> {
         Navigator.pop(context, true);
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Error al generar cotización: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      Utils.showErrorSnackbar('Error', 'Error al generar cotización: $e');
     }
   }
 

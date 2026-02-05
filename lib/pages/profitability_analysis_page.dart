@@ -213,8 +213,7 @@ class _ProfitabilityAnalysisPageState extends State<ProfitabilityAnalysisPage> {
     try {
       final data = reportsController.profitabilityData;
       if (data.isEmpty) {
-        Get.snackbar('Información', 'No hay datos para generar PDF',
-          backgroundColor: Colors.orange);
+        Utils.showInfoSnackbar('Información', 'No hay datos para generar PDF');
         return;
       }
       await PdfService.generateProfitabilityPdf(
@@ -222,11 +221,9 @@ class _ProfitabilityAnalysisPageState extends State<ProfitabilityAnalysisPage> {
         endDate: DateTime.parse(endDate),
         data: data,
       );
-      Get.snackbar('Éxito', 'PDF de rentabilidad generado correctamente',
-        backgroundColor: Colors.green);
+      Utils.showSuccessSnackbar('Éxito', 'PDF de rentabilidad generado correctamente');
     } catch (e) {
-      Get.snackbar('Error', 'Error al generar PDF: $e',
-        backgroundColor: Colors.red);
+      Utils.showErrorSnackbar('Error', 'Error al generar PDF: $e');
     }
   }
 

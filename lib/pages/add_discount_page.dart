@@ -611,11 +611,7 @@ class _AddDiscountPageState extends State<AddDiscountPage> {
         } else {
           // Verificar que la fecha de fin no sea anterior a la de inicio
           if (_startDate != null && picked.isBefore(_startDate!)) {
-            Get.snackbar(
-              'Error',
-              'La fecha de fin no puede ser anterior a la fecha de inicio',
-              snackPosition: SnackPosition.BOTTOM,
-            );
+            Utils.showErrorSnackbar('Error', 'La fecha de fin no puede ser anterior a la fecha de inicio');
             return;
           }
           _endDate = picked;
@@ -631,11 +627,7 @@ class _AddDiscountPageState extends State<AddDiscountPage> {
     
     // Validar fechas
     if (_startDate != null && _endDate != null && _endDate!.isBefore(_startDate!)) {
-      Get.snackbar(
-        'Error',
-        'La fecha de fin no puede ser anterior a la fecha de inicio',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Utils.showErrorSnackbar('Error', 'La fecha de fin no puede ser anterior a la fecha de inicio');
       return;
     }
     

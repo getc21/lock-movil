@@ -493,5 +493,111 @@ class Utils {
     return '${hour.toString()}:${dateTime.minute.toString().padLeft(2, '0')} $period';
   }
 
+  // ============= SNACKBARS REUTILIZABLES =============
+  
+  /// Mostrar snackbar de éxito con estilo consistente
+  static void showSuccessSnackbar(
+    String title,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    Get.snackbar(
+      '✅ $title',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: yes, // Color verde del tema
+      colorText: Colors.white,
+      duration: duration,
+      borderRadius: 12,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      boxShadows: [
+        BoxShadow(
+          color: yes.withValues(alpha: 0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// Mostrar snackbar de error con estilo consistente
+  static void showErrorSnackbar(
+    String title,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    Get.snackbar(
+      '❌ $title',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: no, // Color rojo del tema
+      colorText: Colors.white,
+      duration: duration,
+      borderRadius: 12,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      boxShadows: [
+        BoxShadow(
+          color: no.withValues(alpha: 0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// Mostrar snackbar de información con estilo consistente
+  static void showInfoSnackbar(
+    String title,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    Get.snackbar(
+      'ℹ️ $title',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: edit, // Color azul del tema
+      colorText: Colors.white,
+      duration: duration,
+      borderRadius: 12,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      boxShadows: [
+        BoxShadow(
+          color: edit.withValues(alpha: 0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// Mostrar snackbar de advertencia con estilo consistente
+  static void showWarningSnackbar(
+    String title,
+    String message, {
+    Duration duration = const Duration(seconds: 2),
+  }) {
+    Get.snackbar(
+      '⚠️ $title',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: delete, // Color naranja/rojo del tema
+      colorText: Colors.white,
+      duration: duration,
+      borderRadius: 12,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      boxShadows: [
+        BoxShadow(
+          color: delete.withValues(alpha: 0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
   
 }

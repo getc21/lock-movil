@@ -8,7 +8,7 @@ import '../../services/pdf_service.dart';
 import '../../utils/utils.dart';
 
 class ReturnsListPage extends StatefulWidget {
-  const ReturnsListPage({Key? key}) : super(key: key);
+  const ReturnsListPage({super.key});
 
   @override
   ReturnsListPageState createState() => ReturnsListPageState();
@@ -53,7 +53,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
         endDate: adjustedEndDate,
       );
     } else {
-      Get.snackbar('Error', 'No hay tienda seleccionada');
+      Utils.showErrorSnackbar('Error', 'No hay tienda seleccionada');
     }
   }
 
@@ -352,12 +352,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
   // Generar e imprimir PDF de una devolución específica
   Future<void> _generatePDFForSingleReturn(ReturnRequest returnRequest) async {
     try {
-      Get.snackbar(
-        'Procesando',
-        'Generando PDF...',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
+      Utils.showInfoSnackbar('Procesando', 'Generando PDF...');
 
       final storeName = storeController.currentStore?['name'] ?? 'Tienda';
       final returns = [returnRequest];
@@ -367,14 +362,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
         storeName: storeName,
       );
 
-      Get.snackbar(
-        'Éxito',
-        'PDF generado exitosamente',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      Utils.showSuccessSnackbar('Éxito', 'PDF generado exitosamente');
     } catch (e) {
       String errorMessage = 'Error al generar PDF';
 
@@ -392,39 +380,21 @@ class ReturnsListPageState extends State<ReturnsListPage> {
         errorMessage = 'Permiso denegado. Habilita permisos de almacenamiento.';
       }
 
-      Get.snackbar(
-        'Error',
-        errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
+      Utils.showErrorSnackbar('Error', errorMessage);
     }
   }
 
   // Generar e imprimir PDF de todas las devoluciones
   Future<void> _generateAndPrintPDF() async {
     try {
-      Get.snackbar(
-        'Procesando',
-        'Generando PDF...',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
+      Utils.showInfoSnackbar('Procesando', 'Generando PDF...');
 
       // Preparar datos para el PDF
       final returns = controller.returns;
       final storeName = storeController.currentStore?['name'] ?? 'Tienda';
 
       if (returns.isEmpty) {
-        Get.snackbar(
-          'Error',
-          'No hay devoluciones para generar PDF',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        Utils.showErrorSnackbar('Error', 'No hay devoluciones para generar PDF');
         return;
       }
 
@@ -435,14 +405,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
         storeName: storeName,
       );
 
-      Get.snackbar(
-        'Éxito',
-        'PDF generado exitosamente',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      Utils.showSuccessSnackbar('Éxito', 'PDF generado exitosamente');
     } catch (e) {
       String errorMessage = 'Error al generar PDF';
 
@@ -460,14 +423,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
         errorMessage = 'Permiso denegado. Habilita permisos de almacenamiento.';
       }
 
-      Get.snackbar(
-        'Error',
-        errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
+      Utils.showErrorSnackbar('Error', errorMessage);
     }
   }
 }
@@ -475,7 +431,7 @@ class ReturnsListPageState extends State<ReturnsListPage> {
 class ReturnItemsList extends StatelessWidget {
   final List<ReturnItem> items;
 
-  const ReturnItemsList({required this.items, Key? key}) : super(key: key);
+  const ReturnItemsList({required this.items, super.key});
 
   String _getProductName(String productId) {
     try {
@@ -510,8 +466,8 @@ class ReturnRequestCard extends StatelessWidget {
   const ReturnRequestCard({
     required this.returnRequest,
     this.onPrintPdf,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -43,7 +43,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      Get.snackbar('Error', 'Error cargando usuarios: $e');
+      Utils.showErrorSnackbar('Error', 'Error cargando usuarios: $e');
     }
   }
 
