@@ -16,12 +16,12 @@ class ApiConfig {
     // Para Flutter Web: http://localhost:3000/api
     
     // Descomentar según tu caso:
-    return 'http://10.0.2.2:3000/api'; // Android Emulator
+    // return 'http://10.0.2.2:3000/api'; // Android Emulator
     // return 'http://192.168.0.48:3000/api'; // Dispositivo físico (cambia IP según tu red)
     // return 'http://localhost:3000/api'; // Flutter Web
     
-    // PRODUCCION - Comentar para desarrollo
-    // return _productionUrl;
+    // PRODUCCION - Usar API en producción
+    return _productionUrl;
   }
 
   // Detecta si estamos en un emulador
