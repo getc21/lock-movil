@@ -2,7 +2,7 @@
 
 class ApiConfig {
   // URL DE PRODUCCION - Render
-  static const String _productionUrl = 'https://api.naturalmarkets.net';
+  static const String _productionUrl = 'https://api.naturalmarkets.net/api';
 
   // Desarrollo Local
   //static const String _localIP = '192.168.0.48';
