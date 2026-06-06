@@ -249,10 +249,11 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header del drawer
                   Container(
-                    height: 160,
+                    height: 120,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -263,64 +264,65 @@ class HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    child: SafeArea(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Icon(
-                                    Icons.analytics_rounded,
-                                    color: Colors.white,
-                                    size: 32,
-                                  ),
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.close_rounded,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
+                                child: Icon(
+                                  Icons.analytics_rounded,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Panel de Control',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            Text(
-                              'Gestión y Estadísticas',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
+                              GestureDetector(
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Panel Control',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Gestión y Estadísticas',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   // Contenido del drawer
                   Expanded(
                     child: ListView(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       children: [
                         // Sección de Gestión Principal
                         _buildSectionHeader('Gestión Principal'),
@@ -386,7 +388,7 @@ class HomePageState extends State<HomePage> {
                           },
                         ),
                         
-                        SizedBox(height: 16),
+                        SizedBox(height: 4),
                         
                         // Sección de Reportes
                         _buildSectionHeader('Reportes y Análisis'),
@@ -411,13 +413,13 @@ class HomePageState extends State<HomePage> {
                           },
                         ),
                         
-                        SizedBox(height: 16),
+                        SizedBox(height: 4),
                         
                         // Sección de Usuario
                         _buildSectionHeader('Mi Cuenta'),
                         Container(
-                          margin: EdgeInsets.symmetric(vertical: 8),
-                          padding: EdgeInsets.all(16),
+                          margin: EdgeInsets.symmetric(vertical: 2),
+                          padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: Utils.colorGnav.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -429,18 +431,18 @@ class HomePageState extends State<HomePage> {
                           child: Row(
                             children: [
                               CircleAvatar(
-                                radius: 24,
+                                radius: 20,
                                 backgroundColor: Utils.colorGnav,
                                 child: Text(
                                   authController.userInitials,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,14 +451,14 @@ class HomePageState extends State<HomePage> {
                                       authController.userFullName,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                        fontSize: 12,
                                         color: Utils.colorTexto,
                                       ),
                                     ),
                                     Text(
                                       authController.userRoleDisplay,
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         color: Utils.colorTexto.withValues(alpha: 0.7),
                                       ),
                                     ),
@@ -579,11 +581,11 @@ class HomePageState extends State<HomePage> {
   // Métodos auxiliares para el drawer moderno
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
           color: Utils.colorTexto.withValues(alpha: 0.7),
           letterSpacing: 0.5,
@@ -594,14 +596,14 @@ class HomePageState extends State<HomePage> {
 
   Widget _buildModernDrawerTile(String title, String subtitle, IconData icon, Color iconColor, VoidCallback onTap) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 4),
+      margin: EdgeInsets.symmetric(vertical: 2),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Container(
-            padding: EdgeInsets.all(12),
+            padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
@@ -612,7 +614,7 @@ class HomePageState extends State<HomePage> {
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -620,10 +622,10 @@ class HomePageState extends State<HomePage> {
                   child: Icon(
                     icon,
                     color: iconColor,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,7 +634,7 @@ class HomePageState extends State<HomePage> {
                         title,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Utils.colorTexto,
                         ),
                       ),
@@ -640,7 +642,7 @@ class HomePageState extends State<HomePage> {
                         Text(
                           subtitle,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 10,
                             color: Utils.colorTexto.withValues(alpha: 0.7),
                           ),
                         ),

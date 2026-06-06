@@ -10,11 +10,18 @@ class ApiConfig {
   //static const String _port = '3000';
 
   static String get baseUrl {
-    // PRODUCCION - Usar URL remota
-    return _productionUrl;
+    // DESARROLLO LOCAL - Usar backend local
+    // Para Android Emulator: http://10.0.2.2:3000/api
+    // Para dispositivo físico: http://[TU_IP_LOCAL]:3000/api
+    // Para Flutter Web: http://localhost:3000/api
     
-    // EN DESARROLLO: Descomentar para usar IP local
-    // return 'http://192.168.0.48:3000/api';
+    // Descomentar según tu caso:
+    return 'http://10.0.2.2:3000/api'; // Android Emulator
+    // return 'http://192.168.0.48:3000/api'; // Dispositivo físico (cambia IP según tu red)
+    // return 'http://localhost:3000/api'; // Flutter Web
+    
+    // PRODUCCION - Comentar para desarrollo
+    // return _productionUrl;
   }
 
   // Detecta si estamos en un emulador

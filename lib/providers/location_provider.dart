@@ -24,7 +24,7 @@ class LocationProvider {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final locations = data['data']['locations'];
+        final locations = data['data'];
         if (locations is List) {
           return <String, dynamic>{'success': true, 'data': locations};
         } else {
